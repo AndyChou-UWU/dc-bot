@@ -1,7 +1,7 @@
 FROM python:3.10-slim
 
 # 安裝系統工具與 Ollama
-RUN apt-get update && apt-get install -y curl && \
+RUN apt-get update && apt-get install -y curl zstd && \
     curl -fsSL https://ollama.ai/install.sh | sh
 
 WORKDIR /app
