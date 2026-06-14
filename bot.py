@@ -427,30 +427,15 @@ async def handle_ai_request(message, question, personality):
 
             # 使用已導入的 httpx 進行非同步請求
             async with httpx.AsyncClient(timeout=None) as client_http:
-                # /api/generate expects a single prompt string, not a messages array
-                prompt_parts = []
-                for msg in api_messages:
-                    role = msg["role"]
-                    content = msg["content"]
-                    if role == "system":
-                        prompt_parts.append(f"System: {content}")
-                    elif role == "user":
-                        prompt_parts.append(f"User: {content}")
-                    elif role == "assistant":
-                        prompt_parts.append(f"Assistant: {content}")
-                prompt_parts.append("Assistant:")
-                prompt = "\n".join(prompt_parts)
-
                 payload = {
                     "model": OLLAMA_MODEL,
-                    "prompt": prompt,
-                    "stream": False,
-                    "options": {"num_ctx": 4096} # 確保上下文長度足夠
+                    "messages": api_messages,
+                    "stream": False
                 }
-                response = await client_http.post(f"{OLLAMA_BASE_URL}/api/generate", json=payload)
+                response = await client_http.post(f"{OLLAMA_BASE_URL}/api/chat", json=payload)
                 response.raise_for_status()
                 result = response.json()
-                answer = result.get("response", "⚠️ AI 未返回內容")
+                answer = result.get("message", {}).get("content", "⚠️ AI 未返回內容")
 
             # 更新歷史紀錄
             user_conversations[user_id].append({"role": "user", "content": question})
