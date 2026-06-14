@@ -18,7 +18,7 @@ sleep 5
 
 echo "--- Ollama 已啟動，正在下載模型 ---"
 # 下載模型 (確保環境中有模型可用)
-ollama pull Qwen2.5-1.5B-Instruct || true
+ollama pull mistral || true
 
 echo "--- 正在啟動 Discord Bot ---"
 # 執行你的 bot.py (對應你截圖中的 python bot.py)
