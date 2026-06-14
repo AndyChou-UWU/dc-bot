@@ -425,17 +425,30 @@ async def handle_ai_request(message, question, personality):
             api_messages.extend(user_conversations[user_id])
             api_messages.append({"role": "user", "content": question})
 
-            # 使用已導入的 httpx 進行非同步請求
-            async with httpx.AsyncClient(timeout=None) as client_http:
-                payload = {
-                    "model": OLLAMA_MODEL,
-                    "messages": api_messages,
-                    "stream": False
-                }
-                response = await client_http.post(f"{OLLAMA_BASE_URL}/api/chat", json=payload)
-                response.raise_for_status()
-                result = response.json()
-                answer = result.get("message", {}).get("content", "⚠️ AI 未返回內容")
+            # Build prompt from messages
+            prompt_text = ""
+            for msg in api_messages:
+                role = msg["role"]
+                content = msg["content"]
+                prompt_text += f"{role.upper()}: {content}\n"
+            prompt_text += "ASSISTANT:"
+
+            # Run ollama command directly
+            try:
+                process = await asyncio.create_subprocess_exec(
+                    "ollama", "run", OLLAMA_MODEL, prompt_text,
+                    stdout=asyncio.subprocess.PIPE,
+                    stderr=asyncio.subprocess.PIPE
+                )
+                stdout, stderr = await asyncio.wait_for(process.communicate(), timeout=60)
+                answer = stdout.decode('utf-8').strip()
+                if not answer:
+                    answer = "⚠️ AI 未返回內容"
+            except asyncio.TimeoutError:
+                answer = "⚠️ 請求超時"
+            except Exception as e:
+                logger.error(f"Ollama 命令執行失敗: {e}")
+                answer = f"⚠️ 執行失敗: {str(e)}"
 
             # 更新歷史紀錄
             user_conversations[user_id].append({"role": "user", "content": question})
