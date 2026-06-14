@@ -36,6 +36,7 @@ file_handler = logging.FileHandler(
 file_handler.setFormatter(formatter)
 
 # 控制台处理器
+console_handler = logging.StreamHandler()
 console_handler.setFormatter(formatter)
 
 logger = logging.getLogger(__name__)
