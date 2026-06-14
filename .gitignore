@@ -1,0 +1,8 @@
+# 忽略機密設定檔
+設定.env
+.env
+
+# 忽略本地使用者資料與暫存
+user_data.json
+__pycache__/
+logs/
