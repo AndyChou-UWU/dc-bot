@@ -1,25 +1,18 @@
 #!/bin/bash
-set -e
+set -euo pipefail
 
-# 隨便啟動一個簡單的 web 服務來滿足 HF 的檢測
-python3 -m http.server 7860 &
+echo "--- 啟動簡易健康檢查服務 ---"
+python -m http.server 7860 >/dev/null 2>&1 &
 
-# 確認 Ollama 是否可用
-if ! command -v ollama >/dev/null 2>&1; then
-  echo "❌ Ollama command not found"
-  exit 1
+if command -v ollama >/dev/null 2>&1; then
+  echo "--- 檢測到 Ollama，啟動本地模型服務 ---"
+  ollama serve >/dev/null 2>&1 &
+  sleep 5
+  echo "--- 正在確認/下載模型 ---"
+  ollama pull Qwen2.5-1.5B-Instruct || true
+else
+  echo "⚠️  未偵測到 Ollama；將直接啟動 Bot，但 AI 回答功能需在環境中安裝 Ollama 後再使用。"
 fi
 
-# 啟動 Ollama 伺服器並丟到背景 (&)
-ollama serve &
-
-# 等待伺服器啟動
-sleep 5
-
-echo "--- Ollama 已啟動，正在下載模型 ---"
-# 下載模型 (確保環境中有模型可用)
-ollama pull Qwen2.5-1.5B-Instruct || true
-
 echo "--- 正在啟動 Discord Bot ---"
-# 執行你的 bot.py (對應你截圖中的 python bot.py)
 exec python bot.py

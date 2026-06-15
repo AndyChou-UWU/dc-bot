@@ -79,7 +79,7 @@ httpx
 # https://ollama.ai
 
 # 2. 安裝後，在終端拉取模型
-ollama pull Qwen2.5-1.5B-Instruct
+ollama pull gpt-oss:120b-cloud
 
 # 3. 測試 Ollama 是否運行
 curl http://localhost:11434/api/tags
@@ -106,7 +106,7 @@ DISCORD_TOKEN=你複製的Token_粘貼這裡
 
 # 可選 - 如無需修改可保留默認值
 OLLAMA_BASE_URL=http://localhost:11434
-OLLAMA_MODEL=Qwen2.5-1.5B-Instruct
+OLLAMA_MODEL=gpt-oss:120b-cloud
 ADMIN_IDS=你的Discord_ID,另一個管理員_ID
 ```
 
@@ -144,20 +144,22 @@ python run.py
 |------|------|--------|------|
 | `DISCORD_TOKEN` | ✅ | - | Discord Bot Token |
 | `OLLAMA_BASE_URL` | ❌ | `http://localhost:11434` | Ollama API 地址 |
-| `OLLAMA_MODEL` | ❌ | `Qwen2.5-1.5B-Instruct` | 使用的 AI 模型 |
+| `OLLAMA_MODEL` | ❌ | `gpt-oss:120b-cloud` | 使用的 AI 模型 |
 | `ADMIN_IDS` | ❌ | 空 | 管理員 Discord ID (逗號分隔) |
 
 ### 推薦 Ollama 模型
 
 | 模型 | 大小 | 速度 | 質量 | 推薦指數 |
 |------|------|------|------|---------|
-| **Qwen2.5-1.5B-Instruct** | 980MB | 快 | 優秀 | ⭐⭐⭐⭐⭐ |
+| **gpt-oss:120b-cloud** | 120B 雲端 | 高品質 | 優秀 | ⭐⭐⭐⭐⭐ |
+| `gpt-oss:120b-cloud` | 120B 雲端 | 高品質 | 優秀 | ⭐⭐⭐⭐⭐ |
 | `gemma2:2b` | 1.6GB | 最快 | 良好 | ⭐⭐⭐⭐ |
 | `llama2` | 3.8GB | 中等 | 優秀 | ⭐⭐⭐⭐ |
 | `mistral` | 4.1GB | 中等 | 優秀 | ⭐⭐⭐⭐ |
 
 ```bash
-# 拉取其他模型的命令
+# 拉取模型的命令
+ollama pull gpt-oss:120b-cloud
 ollama pull gemma2:2b
 ollama pull llama2
 ollama pull mistral
@@ -485,14 +487,14 @@ ADMIN_IDS=123456789,987654321
 
 ### Q2: 為什麼回答很慢？
 **A**: 正常現象。本地 Ollama 比雲 API 慢。
-- 使用更小的模型: `gemma2:2b`
+- 使用推薦模型: `gpt-oss:120b-cloud`
 - 升級 CPU/RAM
 - 減少對話歷史長度
 
 ### Q3: 如何更換 AI 模型？
 **A**: 編輯 `設定.env`：
 ```env
-OLLAMA_MODEL=gemma2:2b
+OLLAMA_MODEL=gpt-oss:120b-cloud
 ```
 然後重啟 Bot
 
@@ -543,7 +545,7 @@ Get-Process ollama
 ollama list
 
 # 3. 如果模型不見，重新拉取
-ollama pull Qwen2.5-1.5B-Instruct
+ollama pull gpt-oss:120b-cloud
 
 # 4. 測試 API 是否正常
 curl http://localhost:11434/api/tags
