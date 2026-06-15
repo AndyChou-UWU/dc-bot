@@ -64,7 +64,9 @@ bash entrypoint.sh
 | `!pokemon` / `!trivia` / `!anime` / `!number` | 啟動遊戲 |
 | `!guess [名字]` / `!guess_char [名字]` / `!guess_number [數字]` | 回答遊戲 |
 | `!score` | 查詢遊戲分數 |
-| `!admin stats` / `!admin backup` / `!admin update [版本]` | 管理員功能 |
+| `!admin stats` / `!admin logs [數量]` / `!admin welcome [訊息]` / `!admin leave [訊息]` | 管理員功能 |
+| `!admin custom add [命令] [回覆]` / `!admin custom list` / `!admin custom delete [命令]` | 自訂回覆與管理紀錄 |
+| `!admin backup` / `!admin update [版本]` / `!admin clear_user [user_id]` | 資料備份與管理操作 |
 | `!clear` | 清除對話 |
 | `!guide` | 顯示指南 |
 | `!help` | 顯示幫助 |

@@ -440,6 +440,12 @@ async def on_message(message):
 
 ⚙️ 管理：
 !admin stats - 查看統計
+!admin logs [數量] - 查看管理紀錄
+!admin welcome [訊息] - 設定歡迎訊息
+!admin leave [訊息] - 設定離開訊息
+!admin custom add [命令] [回覆] - 建立自訂回覆
+!admin custom list - 列出自訂命令
+!admin custom delete [命令] - 刪除自訂命令
 !admin backup - 備份資料
 !admin update [版本號] - 推送更新通知
 !admin clear_user [user_id] - 清除用戶資料
@@ -566,20 +572,29 @@ async def handle_admin_command(message):
     """處理管理員命令"""
     user_id = message.author.id
     cmd = message.content[6:].strip().split()
-    
+    guild_id = message.guild.id if getattr(message, "guild", None) else 0
+
     if not cmd:
         await message.channel.send("""
 ```
 管理員命令:
 !admin stats - 查看統計
+!admin logs [數量] - 查看管理紀錄
+!admin welcome [訊息] - 設定歡迎訊息
+!admin leave [訊息] - 設定離開訊息
+!admin custom add [命令] [回覆] - 建立自訂回覆
+!admin custom list - 列出自訂命令
+!admin custom delete [命令] - 删除自訂命令
 !admin clear_user [user_id] - 清除用戶數據
 !admin backup - 備份數據
-!admin update [版本號] - 發送更新通知 (例: !admin update 1.0.1)
+!admin update [版本號] - 發送更新通知
 !admin restart - 重啟 Bot
 ```
 """)
         return
-    
+
+    admin.log_action(guild_id, "admin_command", user_id, " ".join(cmd))
+
     if cmd[0] == "stats":
         stats = f"""
 📊 **Bot 統計**
@@ -599,6 +614,46 @@ async def handle_admin_command(message):
         else:
             await message.channel.send("❌ 用戶不存在")
     
+    elif cmd[0] == "logs":
+        limit = int(cmd[1]) if len(cmd) > 1 and cmd[1].isdigit() else 10
+        logs = admin.get_logs(guild_id, limit)
+        if not logs:
+            await message.channel.send("📋 目前沒有管理紀錄")
+        else:
+            lines = [f"{idx + 1}. {item['timestamp']} | {item['action']} | {item['user']} | {item['reason']}" for idx, item in enumerate(logs)]
+            await message.channel.send("\n".join(lines[:20]))
+
+    elif cmd[0] == "welcome" and len(cmd) > 1:
+        text = message.content[6 + len("welcome "):].strip()
+        admin.set_welcome_message(guild_id, text)
+        await message.channel.send(f"✅ 已更新歡迎訊息：\n{text}")
+
+    elif cmd[0] == "leave" and len(cmd) > 1:
+        text = message.content[6 + len("leave "):].strip()
+        admin.set_leave_message(guild_id, text)
+        await message.channel.send(f"✅ 已更新離開訊息：\n{text}")
+
+    elif cmd[0] == "custom" and len(cmd) >= 3 and cmd[1] == "add":
+        name = cmd[2]
+        response = message.content.split(maxsplit=4)
+        if len(response) < 5:
+            await message.channel.send("用法: !admin custom add [命令] [回覆]")
+            return
+        reply = response[4]
+        ok, msg = admin.create_custom_command(name, reply)
+        await message.channel.send(msg)
+
+    elif cmd[0] == "custom" and len(cmd) >= 2 and cmd[1] == "list":
+        await message.channel.send(admin.list_custom_commands())
+
+    elif cmd[0] == "custom" and len(cmd) >= 3 and cmd[1] == "delete":
+        ok, msg = admin.delete_custom_command(cmd[2])
+        await message.channel.send(msg)
+
+    elif cmd[0] == "config":
+        cfg = admin.get_server_config(guild_id)
+        await message.channel.send("\n".join([f"{k}: {v}" for k, v in cfg.items()]))
+
     elif cmd[0] == "backup":
         save_all_user_data()
         await message.channel.send("✅ 已備份數據")
