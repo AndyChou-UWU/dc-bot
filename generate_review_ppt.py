@@ -332,7 +332,7 @@ def create_review_ppt():
     
     # ==================== 第 5 張：AI 對話系統 ====================
     add_content_slide(prs, "AI 對話系統", [
-        "🤖 集成 Ollama Qwen2.5-1.5B-Instruct 模型",
+        "🤖 集成 Ollama Qwen2.5-1.5B 模型",
         "",
         "💾 上下文記憶：最近 10 條訊息歷史",
         "",

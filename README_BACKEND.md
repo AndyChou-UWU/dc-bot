@@ -197,7 +197,7 @@ DISCORD_TOKEN=你的_Token
 
 # Ollama 配置
 OLLAMA_BASE_URL=http://localhost:11434
-OLLAMA_MODEL=Qwen2.5-1.5B-Instruct
+OLLAMA_MODEL=Qwen2.5-1.5B
 
 # 频道 ID (可选，用于测试)
 TEST_CHANNEL_ID=1500045129614885079
@@ -207,7 +207,7 @@ ADMIN_IDS=123456789,987654321
 ```
 
 ### 可用的 Ollama 模型
-- `Qwen2.5-1.5B-Instruct` - **推荐** ✅ 对话优化
+- `Qwen2.5-1.5B` - **推荐** ✅ 对话优化
 - `gemma2:2b` - 轻量级，速度快
 - `mistral` - 通用模型
 - `llama2` - 需自行下载
@@ -236,7 +236,7 @@ OLLAMA_MODEL=gemma2:2b
 ```bash
 # 解决方案:
 ollama serve
-ollama pull Qwen2.5-1.5B-Instruct
+ollama pull Qwen2.5-1.5B
 ```
 
 ### ❌ 日志文件太大

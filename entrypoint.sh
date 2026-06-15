@@ -9,7 +9,7 @@ if command -v ollama >/dev/null 2>&1; then
   ollama serve >/dev/null 2>&1 &
   sleep 5
   echo "--- 正在確認/下載模型 ---"
-  ollama pull Qwen2.5-1.5B-Instruct || true
+  ollama pull Qwen2.5-1.5B || true
 else
   echo "⚠️  未偵測到 Ollama；將直接啟動 Bot，但 AI 回答功能需在環境中安裝 Ollama 後再使用。"
 fi

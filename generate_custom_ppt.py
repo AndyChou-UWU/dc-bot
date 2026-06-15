@@ -116,7 +116,7 @@ def create_ppt():
     # 3. 技術架構
     add_content_slide(prs, "技術架構", [
         "🛠️ 後端：Python 3.8+、discord.py >=2.0.0、非同步事件驅動",
-        "🤖 AI：Ollama Qwen2.5-1.5B-Instruct，HTTP 非同步呼叫",
+        "🤖 AI：Ollama Qwen2.5-1.5B，HTTP 非同步呼叫",
         "💾 資料：JSON (user_data.json) 本地持久化",
         "⚙️ 部署：Dockerfile、ngrok 代理，支援雲端執行"
     ], accent_color=COLORS["primary"])

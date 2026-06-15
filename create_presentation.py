@@ -276,7 +276,7 @@ add_two_column_slide(prs, "📋 环境与依赖",
 add_content_slide(prs, "🚀 部署与运行", [
     "1️⃣ 安装依赖：pip install -r requirements.txt",
     "2️⃣ 安装 Ollama：https://ollama.ai",
-    "3️⃣ 拉取模型：ollama pull Qwen2.5-1.5B-Instruct",
+    "3️⃣ 拉取模型：ollama pull Qwen2.5-1.5B",
     "4️⃣ 配置 Token：在 設定.env 中设置 DISCORD_TOKEN",
     "5️⃣ 启动 Bot：python bot.py",
     "6️⃣ Docker 部署：docker build -t dcard-bot . && docker run ...",

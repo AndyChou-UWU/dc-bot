@@ -14,7 +14,7 @@ client = discord.Client(intents=intents)
 
 # Ollama configuration
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "Qwen2.5-1.5B-Instruct")  # 預設使用 Qwen2.5-1.5B-Instruct 模型
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "Qwen2.5-1.5B")  # 預設使用 Qwen2.5-1.5B 模型
 
 # 角色類型的系統提示詞
 PERSONALITIES = {

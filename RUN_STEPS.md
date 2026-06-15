@@ -42,7 +42,7 @@ DISCORD_TOKEN=你的_Token_（必须填）
 
 # 推荐配置
 OLLAMA_BASE_URL=http://localhost:11434
-OLLAMA_MODEL=Qwen2.5-1.5B-Instruct
+OLLAMA_MODEL=Qwen2.5-1.5B
 
 # 可选（管理员功能）
 ADMIN_IDS=你的Discord_ID
@@ -118,7 +118,7 @@ python run.py
 ```
 ✓ Bot 已連接！登入為: python project#9934
 ✓ Ollama 端點: http://localhost:11434
-✓ 使用模型: Qwen2.5-1.5B-Instruct
+✓ 使用模型: Qwen2.5-1.5B
 ```
 
 ### 检查日志文件
@@ -200,7 +200,7 @@ Bot 应该回复类似：
 解决:
 1. 检查 Ollama 是否运行: Get-Process ollama
 2. 检查模型: ollama list
-3. 拉取模型: ollama pull Qwen2.5-1.5B-Instruct
+3. 拉取模型: ollama pull Qwen2.5-1.5B
 ```
 
 ### ❌ 编码错误/乱码
