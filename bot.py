@@ -10,32 +10,34 @@ from dotenv import load_dotenv
 import httpx
 # 引入 prism_config 中的全局設定
 from prism_config import *
+from modules_games import GameSystem
+from modules_admin import AdminSystem
 # 確保 PERSONALITIES 已正確載入（防止 import * 未帶入）
 if 'PERSONALITIES' not in globals():
     from prism_config import PERSONALITIES  # pragma: no cover
 
 
-# 解决 Windows 编码问题
+# 解決 Windows 編碼問題
 if sys.platform == 'win32':
     import io
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
     sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
 
-# ==================== 日志系统 ====================
+# ==================== 日誌系統 ====================
 log_dir = "logs"
 os.makedirs(log_dir, exist_ok=True)
 
-# 配置日志（使用 UTF-8 编码）
+# 配置日誌（使用 UTF-8 編碼）
 formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 
-# 文件处理器
+# 文件處理器
 file_handler = logging.FileHandler(
     f"{log_dir}/bot_{datetime.now().strftime('%Y%m%d')}.log", 
     encoding='utf-8'
 )
 file_handler.setFormatter(formatter)
 
-# 控制台处理器
+# 控制檯處理器
 console_handler = logging.StreamHandler()
 console_handler.setFormatter(formatter)
 
@@ -65,16 +67,16 @@ ADMIN_IDS = [int(i.strip()) for i in admin_env.split(",") if i.strip().isdigit()
 # 使用 prism_config 中的版本資訊
 BOT_VERSION = "2.0.0"
 last_notified_version = "2.0.0"
-# Bot 名称（用于问候）
+# Bot 名稱（用於問候）
 BOT_NAME = "subaso-俗北ㄙㄡˊ"
-# 额外描述（来自 prism_config）
+# 額外描述（來自 prism_config）
 BOT_DESCRIPTION = "subaso-俗北ㄙㄡˊ - 多功能 AI Discord Bot"
 
-# ==================== 数据文件 ====================
+# ==================== 數據文件 ====================
 DATA_FILE = "user_data.json"
 
 def load_user_data():
-    """加载用户数据"""
+    """加載用戶數據"""
     if os.path.exists(DATA_FILE):
         try:
             with open(DATA_FILE, 'r', encoding='utf-8') as f:
@@ -84,22 +86,25 @@ def load_user_data():
     return {}
 
 def save_user_data(data):
-    """保存用户数据"""
+    """保存用戶數據"""
     try:
         with open(DATA_FILE, 'w', encoding='utf-8') as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
     except Exception as e:
-        logger.error(f"保存数据失败: {e}")
+        logger.error(f"保存數據失敗: {e}")
 
-# ==================== 角色和数据 ====================
+# ==================== 角色和數據 ====================
 # PERSONALITIES 已從 prism_config 引入，以下保持空白以避免覆寫
 
 user_personalities = {}
 user_languages = {}
 user_conversations = {}
 user_seen_guide = {}
-user_dms = {}  # 存储用户的 DM 频道用于广播
+user_dms = {}  # 存儲用戶的 DM 頻道用於廣播
 MAX_HISTORY = 10
+
+games = GameSystem()
+admin = AdminSystem()
 
 LANGUAGE_OPTIONS = {
     "chinese": "繁體中文",
@@ -117,9 +122,9 @@ LANGUAGE_PROMPTS = {
     "spanish": "Por favor responde en Español."
 }
 
-# 加载已保存的用户数据
+# 加載已保存的用戶數據
 def load_all_user_data():
-    """从文件加载所有用户数据"""
+    """從文件加載所有用戶數據"""
     global user_personalities, user_languages, user_conversations
     data = load_user_data()
     if "personalities" in data:
@@ -128,10 +133,10 @@ def load_all_user_data():
         user_languages = {int(k): v for k, v in data["languages"].items()}
     if "conversations" in data:
         user_conversations = data["conversations"]
-    logger.info(f"加载了 {len(user_personalities)} 个用户的数据")
+    logger.info(f"加載了 {len(user_personalities)} 個用戶的數據")
 
 def save_all_user_data():
-    """保存所有用户数据到文件"""
+    """保存所有用戶數據到文件"""
     global user_personalities, user_languages, user_conversations, BOT_VERSION, last_notified_version
     data = {
         "personalities": {str(k): v for k, v in user_personalities.items()},
@@ -144,7 +149,7 @@ def save_all_user_data():
     save_user_data(data)
 
 def load_version_info():
-    """加载版本信息"""
+    """加載版本信息"""
     global BOT_VERSION, last_notified_version
     data = load_user_data()
     if "bot_version" in data:
@@ -152,18 +157,18 @@ def load_version_info():
     if "last_notified_version" in data:
         last_notified_version = data["last_notified_version"]
 
-# ==================== 事件处理 ====================
+# ==================== 事件處理 ====================
 @client.event
 async def on_ready():
     logger.info(f"✓ Bot 已連接！登入為: {client.user}")
     logger.info(f"✓ Ollama 端點: {OLLAMA_BASE_URL}")
     logger.info(f"✓ 使用模型: {OLLAMA_MODEL}")
     
-    # 加载用户数据
+    # 加載用戶數據
     load_all_user_data()
     load_version_info()
     
-    # 检查版本更新
+    # 檢查版本更新
     await check_and_notify_updates()
     
     print(f"✓ Bot 已連接！登入為: {client.user}")
@@ -171,7 +176,7 @@ async def on_ready():
 
 @client.event
 async def on_member_join(member):
-    """新成員加入時发送欢迎消息"""
+    """新成員加入時發送歡迎消息"""
     try:
         welcome_channel = None
         for channel in member.guild.text_channels:
@@ -184,10 +189,10 @@ async def on_member_join(member):
             welcome_msg = f"""
 👋 **歡迎 {member.mention}！**
 
-🤖 這是 AI 聊天助手機器人。
+🤖 這是 subaso-俗北ㄙㄡˊ。
 
 🚀 **快速開始:**
-在私信中輸入任何消息，我會自動發送完整說明。
+在私信中輸入任何訊息，我會自動顯示完整使用指引。
 
 💬 **常用命令:**
 `!mode 角色名` - 切換角色
@@ -214,25 +219,25 @@ async def on_message(message):
     
     user_id = message.author.id
     
-    # 保存用户 DM 频道用于广播
+    # 保存用戶 DM 頻道用於廣播
     if user_id not in user_dms:
         user_dms[user_id] = message.channel
     
-    # 首次发送时显示 guide
+    # 首次發送時顯示 guide
     if user_id not in user_seen_guide:
         user_seen_guide[user_id] = True
         guide = """
-👋 **歡迎使用 AI 聊天助手！**
+👋 **歡迎使用 subaso-俗北ㄙㄡˊ！**
 
-🎭 **5 種角色:**
-✅ 閒談 | 🔢 數理 | 📚 語文 | 💻 程式 | 🏠 家務
+🎭 **AI 角色:** 閒談 / 數理 / 語文 / 程式 / 家務
+🎮 **遊戲互動:** Pokemon、Trivia、動漫猜謎、數字遊戲、擁抱 / 拍拍 / 跳舞
+⚙️ **管理功能:** 管理員統計、備份、更新通知、清理用戶資料
 
-📖 **使用方法:**
-`!mode 角色名` - 切換角色 (例: !mode 程式)
-`!ask 你的問題` - 提問
-`!lan [語言]` - 選擇回答語言 (例: !lan english)
-`!clear` - 清除對話
-`!help` - 幫助
+📖 **快速開始:**
+`!mode 程式` → 切換角色
+`!ask Python 怎麼寫迴圈？` → 提問
+`!pokemon` / `!trivia` / `!anime` / `!number` → 玩遊戲
+`!help` → 查看完整指令
 
 🚀 **試試看:**
 `!mode 閒談` 然後 `!ask 你好！`
@@ -240,14 +245,14 @@ async def on_message(message):
         await message.channel.send(guide)
         return
     
-    # 处理管理员命令
+    # 處理管理員命令
     if message.content.startswith("!admin") and user_id in ADMIN_IDS:
         await handle_admin_command(message)
         return
     
     current_personality = user_personalities.get(user_id, "閒談")
     
-    # 处理其他命令
+    # 處理其他命令
     if message.content.startswith("!mode"):
         args = message.content[5:].strip().split()
         if not args:
@@ -266,7 +271,7 @@ async def on_message(message):
             # 別名映射（常見英文或簡體中文別名）
             alias_map = {
                 "chat": "閒談",
-                "闲谈": "閒談",
+                "閒談": "閒談",
                 "chatting": "閒談",
                 "math": "數理",
                 "science": "數理",
@@ -326,6 +331,48 @@ async def on_message(message):
             return
         
         await handle_ai_request(message, question, current_personality)
+
+    elif message.content.startswith("!pokemon"):
+        await message.channel.send(games.start_pokemon_game(user_id))
+
+    elif message.content.startswith("!trivia"):
+        await message.channel.send(games.start_trivia(user_id))
+
+    elif message.content.startswith("!anime"):
+        await message.channel.send(games.start_anime_guess(user_id))
+
+    elif message.content.startswith("!number"):
+        await message.channel.send(games.start_number_game(user_id))
+
+    elif message.content.startswith("!guess"):
+        _, msg = games.check_pokemon_answer(user_id, message.content[6:].strip())
+        await message.channel.send(msg)
+
+    elif message.content.startswith("!guess_char"):
+        _, msg = games.check_anime_answer(user_id, message.content[11:].strip())
+        await message.channel.send(msg)
+
+    elif message.content.startswith("!guess_number"):
+        try:
+            guess = int(message.content[12:].strip())
+            ok, msg = games.check_number_answer(user_id, guess)
+            await message.channel.send(msg if ok is not None else msg)
+        except ValueError:
+            await message.channel.send("請輸入有效數字，例如：!guess_number 42")
+
+    elif message.content.startswith("!score"):
+        await message.channel.send(f"🏆 你的遊戲分數：{games.get_user_score(user_id)} 分")
+
+    elif message.content.startswith("!hug"):
+        target = message.mentions[0].mention if message.mentions else "大家"
+        await message.channel.send(f"🤗 {message.author.mention} 擁抱了 {target}")
+
+    elif message.content.startswith("!pat"):
+        target = message.mentions[0].mention if message.mentions else "你"
+        await message.channel.send(f"👋 {message.author.mention} 拍了拍 {target}")
+
+    elif message.content.startswith("!dance"):
+        await message.channel.send(f"🕺 {message.author.mention} 跳起舞來！")
     
     elif message.content.startswith("!clear"):
         if user_id in user_conversations:
@@ -335,14 +382,14 @@ async def on_message(message):
         logger.info(f"用戶 {user_id} 清除對話")
     
     elif message.content.startswith("!deleteall"):
-        # 删除对话历史和 Bot 消息
+        # 刪除對話歷史和 Bot 消息
         deleted_count = 0
         try:
-            # 清除内存中的对话
+            # 清除內存中的對話
             if user_id in user_conversations:
                 del user_conversations[user_id]
             
-            # 清除 JSON 存储的数据
+            # 清除 JSON 存儲的數據
             try:
                 data = json.load(open("user_data.json", "r", encoding="utf-8"))
                 if str(user_id) in data.get("personalities", {}):
@@ -356,7 +403,7 @@ async def on_message(message):
             except:
                 pass
             
-            # 删除 Bot 发送的消息
+            # 刪除 Bot 發送的消息
             async for msg in message.channel.history(limit=None):
                 if msg.author == client.user and msg.id != message.id:
                     try:
@@ -366,25 +413,42 @@ async def on_message(message):
                     except:
                         pass
             
-            await message.channel.send(f"✅ 已清除所有数据和 {deleted_count} 条对话消息")
-            logger.info(f"用户 {user_id} 完全删除了数据和 {deleted_count} 条消息")
+            await message.channel.send(f"✅ 已清除所有數據和 {deleted_count} 條對話消息")
+            logger.info(f"用戶 {user_id} 完全刪除了數據和 {deleted_count} 條消息")
         except Exception as e:
-            await message.channel.send(f"❌ 清除失败: {str(e)}")
-            logger.error(f"清除失败: {e}")
+            await message.channel.send(f"❌ 清除失敗: {str(e)}")
+            logger.error(f"清除失敗: {e}")
     
     elif message.content.startswith("!help"):
         help_text = """
 ```
 命令列表:
+🤖 AI：
 !mode [角色] - 切換角色
 !ask [問題] - 提問 (支援連續對話)
 !lan [語言] - 選擇回答語言
 !clear - 清除對話記錄
-!deleteall - 刪除所有訊息
+
+🎮 遊戲：
+!pokemon - 開始 Pokemon 猜謎
+!trivia - 開始 Trivia 知識競賽
+!anime - 開始 動漫角色 猜謎
+!number - 開始 數字猜測 遊戲
+!guess [名字] / !guess_char [名字] / !guess_number [數字] - 回答遊戲
+!score - 查看遊戲分數
+!hug [@用戶] / !pat [@用戶] / !dance - 互動動作
+
+⚙️ 管理：
+!admin stats - 查看統計
+!admin backup - 備份資料
+!admin update [版本號] - 推送更新通知
+!admin clear_user [user_id] - 清除用戶資料
+
+!deleteall - 清除所有訊息
 !guide - 顯示引導
 !help - 顯示此幫助
 
-角色: 閒談、數理、語文、程式、家務
+角色：閒談、數理、語文、程式、家務
 ```
 """
         await message.channel.send(help_text)
@@ -402,9 +466,9 @@ async def on_message(message):
 使用: !mode [角色] → !ask [問題]
 """)
 
-    # 默认回复：非命令的私信消息
+    # 默認回覆：非命令的私信消息
     else:
-        # 若用户在私信中发送非命令内容，回复问候并使用 BOT_NAME
+        # 若用戶在私信中發送非命令內容，回覆問候並使用 BOT_NAME
         await message.channel.send(
             f"嗨 {message.author.name}，我是 {BOT_NAME}，很高興認識你！"
         )
@@ -463,14 +527,14 @@ async def handle_ai_request(message, question, personality):
         await message.channel.send(f"❌ 發生錯誤: {str(e)}")
 
 async def check_and_notify_updates():
-    """检查版本更新并通知用户"""
+    """檢查版本更新並通知用戶"""
     global BOT_VERSION, last_notified_version
     # 如果有新版本需要通知
     if BOT_VERSION != last_notified_version and len(user_dms) > 0:
         await broadcast_update_notification(BOT_VERSION)
 
 async def broadcast_update_notification(new_version):
-    """向所有用户广播更新通知"""
+    """向所有用戶廣播更新通知"""
     global BOT_VERSION, last_notified_version
     BOT_VERSION = new_version
     last_notified_version = new_version
@@ -499,7 +563,7 @@ async def broadcast_update_notification(new_version):
     logger.info(f"更新通知已發送: 成功 {success_count}, 失敗 {failed_count}")
 
 async def handle_admin_command(message):
-    """处理管理员命令"""
+    """處理管理員命令"""
     user_id = message.author.id
     cmd = message.content[6:].strip().split()
     
@@ -551,9 +615,9 @@ async def handle_admin_command(message):
         await message.channel.send(f"✅ 已發送更新通知至所有用戶: 版本 {new_version}")
         logger.warning(f"管理員 {user_id} 觸發更新至版本 {new_version}")
 
-# ==================== 启动 ====================
+# ==================== 啓動 ====================
 def main():
-    """主函数"""
+    """主函數"""
     token = os.getenv("DISCORD_TOKEN")
     if not token:
         logger.error("未找到 DISCORD_TOKEN")

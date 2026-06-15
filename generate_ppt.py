@@ -138,7 +138,7 @@ def create_presentation():
     overview = """📊 項目信息
 • 名稱: PRISM Bot（subaso-俗北ㄙㄡˊ）
 • 版本: 2.0.0
-• 平台: Discord.py
+• 平臺: Discord.py
 • AI引擎: Ollama (Qwen2.5-1.5B)
 • 語言: Python 3.8+
 
@@ -180,7 +180,7 @@ def create_presentation():
     economy_content = """💰 經濟系統架構
 
 🪙 虛擬貨幣: 💎 晶幣
-   初始余額: 1000 晶幣
+   初始餘額: 1000 晶幣
 
 ⛏️ 挖礦系統
 • 鐵礦: 50 晶幣 (60秒冷卻)
@@ -222,7 +222,7 @@ def create_presentation():
    - 即時反饋
 
 5️⃣ 動漫查詢
-   - 元数据查询
+   - 元數據查詢
 
 6️⃣ 互動動作
    - 擁抱 (🤗) | 拍拍 (👋) | 跳舞 (🕺)
@@ -241,7 +241,7 @@ def create_presentation():
 !clear - 清除對話歷史
 
 💰 經濟系統
-!balance - 查看余額 | !mine - 挖礦 | !fish - 釣魚
+!balance - 查看餘額 | !mine - 挖礦 | !fish - 釣魚
 !hunt - 狩獵 | !gamble [金額] - 賭博 | !slots [金額] - 老虎機
 !pet [list|adopt|info|feed] - 寵物系統
 

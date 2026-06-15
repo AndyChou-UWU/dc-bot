@@ -1,13 +1,13 @@
 """
 PRISM Bot v2.0 - 多功能 Discord Bot
-包含 28 个强大功能的完整实现
+包含 28 個強大功能的完整實現
 
-功能模块:
-🤖 AI 对话系统 (5个)
-💰 经济系统 (6个)
-🎮 娱乐游戏 (6个)
-⚙️ 管理工具 (5个)
-🎵 音乐系统 (可选, 6个)
+功能模塊:
+🤖 AI 對話系統 (5個)
+💰 經濟系統 (6個)
+🎮 娛樂遊戲 (6個)
+⚙️ 管理工具 (5個)
+🎵 音樂系統 (可選, 6個)
 """
 
 import os
@@ -20,13 +20,13 @@ from datetime import datetime
 from dotenv import load_dotenv
 import httpx
 
-# 导入自定义模块
+# 導入自定義模塊
 from modules_economy import EconomySystem, get_economy_commands
 from modules_games import GameSystem, get_game_commands
 from modules_admin import AdminSystem, get_admin_commands
 from prism_config import *
 
-# ==================== 日志系统 ====================
+# ==================== 日誌系統 ====================
 log_dir = "logs"
 os.makedirs(log_dir, exist_ok=True)
 
@@ -60,13 +60,13 @@ intents.message_content = True
 intents.members = True
 client = discord.Client(intents=intents)
 
-# ==================== 全局变量 ====================
+# ==================== 全局變量 ====================
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen2.5:1.5b")
 admin_env = os.getenv("ADMIN_IDS", "")
 ADMIN_IDS = [int(i.strip()) for i in admin_env.split(",") if i.strip().isdigit()]
 
-# 数据管理
+# 數據管理
 DATA_FILE = "user_data.json"
 user_personalities = {}
 user_languages = {}
@@ -75,16 +75,16 @@ user_seen_guide = {}
 user_dms = {}
 last_notified_version = BOT_VERSION
 
-# 系统实例
+# 系統實例
 economy = EconomySystem()
 games = GameSystem()
 admin = AdminSystem()
 
 MAX_HISTORY = 10
 
-# ==================== 数据加载/保存 ====================
+# ==================== 數據加載/保存 ====================
 def load_user_data():
-    """加载用户数据"""
+    """加載用戶數據"""
     if os.path.exists(DATA_FILE):
         try:
             with open(DATA_FILE, 'r', encoding='utf-8') as f:
@@ -94,15 +94,15 @@ def load_user_data():
     return {}
 
 def save_user_data(data):
-    """保存用户数据"""
+    """保存用戶數據"""
     try:
         with open(DATA_FILE, 'w', encoding='utf-8') as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
     except Exception as e:
-        logger.error(f"保存数据失败: {e}")
+        logger.error(f"保存數據失敗: {e}")
 
 def load_all_user_data():
-    """从文件加载所有用户数据"""
+    """從文件加載所有用戶數據"""
     global user_personalities, user_languages, last_notified_version
     data = load_user_data()
     if "personalities" in data:
@@ -111,10 +111,10 @@ def load_all_user_data():
         user_languages = {int(k): v for k, v in data["languages"].items()}
     if "last_notified_version" in data:
         last_notified_version = data["last_notified_version"]
-    logger.info(f"加载了 {len(user_personalities)} 个用户的数据")
+    logger.info(f"加載了 {len(user_personalities)} 個用戶的數據")
 
 def save_all_user_data():
-    """保存所有用户数据到文件"""
+    """保存所有用戶數據到文件"""
     global user_personalities, user_languages, BOT_VERSION, last_notified_version
     data = {
         "personalities": {str(k): v for k, v in user_personalities.items()},
@@ -125,7 +125,7 @@ def save_all_user_data():
     }
     save_user_data(data)
 
-# ==================== 事件处理 ====================
+# ==================== 事件處理 ====================
 @client.event
 async def on_ready():
     logger.info(f"✓ PRISM Bot v{BOT_VERSION} 已連接！登入為: {client.user}")
@@ -140,7 +140,7 @@ async def on_ready():
 
 @client.event
 async def on_member_join(member):
-    """新成員加入時发送欢迎消息"""
+    """新成員加入時發送歡迎消息"""
     try:
         welcome_channel = None
         for channel in member.guild.text_channels:
@@ -154,7 +154,7 @@ async def on_member_join(member):
             await welcome_channel.send(f"👋 {member.mention} {welcome_msg}")
             logger.info(f"新成員加入: {member.name}")
     except Exception as e:
-        logger.error(f"無法發送欢迎消息: {e}")
+        logger.error(f"無法發送歡迎消息: {e}")
 
 @client.event
 async def on_message(message):
@@ -169,15 +169,15 @@ async def on_message(message):
     
     user_id = message.author.id
     
-    # 保存用户 DM 频道
+    # 保存用戶 DM 頻道
     if user_id not in user_dms:
         user_dms[user_id] = message.channel
     
-    # 首次发送时显示指南
+    # 首次發送時顯示指南
     if user_id not in user_seen_guide:
         user_seen_guide[user_id] = True
         guide = """
-👋 **歡迎使用 PRISM - 棱镜 Bot**
+👋 **歡迎使用 PRISM - 棱鏡 Bot**
 
 🎊 已集成 **28 個強大功能**
 
@@ -190,7 +190,7 @@ async def on_message(message):
 📖 **快速開始:**
 `!help` - 查看完整命令
 `!mode` - 切換 AI 角色
-`!balance` - 查看余额
+`!balance` - 查看餘額
 `!pokemon` - 玩遊戲
 
 祝使用愉快！🌈
@@ -198,12 +198,12 @@ async def on_message(message):
         await message.channel.send(guide)
         return
     
-    # 处理管理员命令
+    # 處理管理員命令
     if message.content.startswith("!admin") and user_id in ADMIN_IDS:
         await handle_admin_command(message)
         return
     
-    # 新增问候触发：如果用户自我介绍为 俗北，回复问候并使用 bot 名称
+    # 新增問候觸發：如果用戶自我介紹爲 俗北，回覆問候並使用 bot 名稱
     if "我叫 俗北" in message.content or "我叫俗北" in message.content:
         await message.channel.send(f"嗨 俗北！我是 {BOT_NAME}，很高興認識你！今天心情如何？")
         return
@@ -227,7 +227,7 @@ async def on_message(message):
             # 別名映射（常見英文或簡體中文別名）
             alias_map = {
                 "chat": "閒談",
-                "闲谈": "閒談",
+                "閒談": "閒談",
                 "chatting": "閒談",
                 "math": "數理",
                 "science": "數理",
@@ -293,7 +293,7 @@ async def on_message(message):
     # ==================== 經濟命令 ====================
     elif message.content.startswith("!balance"):
         balance = economy.get_balance(user_id)
-        await message.channel.send(f"💎 **你的余額:** {balance} {CURRENCY_NAME}")
+        await message.channel.send(f"💎 **你的餘額:** {balance} {CURRENCY_NAME}")
     
     elif message.content.startswith("!mine"):
         can_mine, remaining = economy.can_mine(user_id)
@@ -327,8 +327,8 @@ async def on_message(message):
             try:
                 amount = int(args[0])
                 won, winnings, msg = economy.gamble(user_id, amount)
-                if won is False and msg == "余額不足":
-                    await message.channel.send(f"❌ 余額不足")
+                if won is False and msg == "餘額不足":
+                    await message.channel.send(f"❌ 餘額不足")
                 elif won:
                     await message.channel.send(f"🎉 {msg}\n獲得 {winnings} {CURRENCY_NAME}")
                 else:
@@ -405,7 +405,7 @@ async def on_message(message):
     # ==================== 互動命令 ====================
     elif message.content.startswith("!hug"):
         target = message.mentions[0].mention if message.mentions else "大家"
-        await message.channel.send(f"🤗 {message.author.mention} 拥抱了 {target}")
+        await message.channel.send(f"🤗 {message.author.mention} 擁抱了 {target}")
     
     elif message.content.startswith("!pat"):
         target = message.mentions[0].mention if message.mentions else "你"
@@ -441,10 +441,10 @@ async def on_message(message):
                     except:
                         pass
             
-            await message.channel.send(f"✅ 已清除所有数据和 {deleted_count} 条对话消息")
-            logger.info(f"用户 {user_id} 完全删除了数据和 {deleted_count} 条消息")
+            await message.channel.send(f"✅ 已清除所有數據和 {deleted_count} 條對話消息")
+            logger.info(f"用戶 {user_id} 完全刪除了數據和 {deleted_count} 條消息")
         except Exception as e:
-            await message.channel.send(f"❌ 清除失败: {str(e)}")
+            await message.channel.send(f"❌ 清除失敗: {str(e)}")
     
     elif message.content.startswith("!help"):
         help_text = """
@@ -459,7 +459,7 @@ async def on_message(message):
 !ask [問題] - 提問
 
 💰 經濟系統:
-!balance - 查看余額
+!balance - 查看餘額
 !mine - 挖礦 (60秒冷卻)
 !fish - 釣魚 (60秒冷卻)
 !hunt - 狩獵 (120秒冷卻)
@@ -485,7 +485,7 @@ async def on_message(message):
     
     elif message.content.startswith("!guide"):
         guide = """
-🎊 **PRISM Bot - 功能概览**
+🎊 **PRISM Bot - 功能概覽**
 
 28 個強大功能已集成:
 
@@ -493,7 +493,7 @@ async def on_message(message):
 - 5 種角色 | 多語言 | 連續對話 | 版本管理 | 數據保存
 
 💰 **經濟系統** (6個)
-- 挖礦 | 釣魚 | 狩獵 | 賭博 | 宠物 | 市場
+- 挖礦 | 釣魚 | 狩獵 | 賭博 | 寵物 | 市場
 
 🎮 **娛樂遊戲** (6個)
 - Pokémon | Trivia | 動漫 | 數字 | 查詢 | 互動

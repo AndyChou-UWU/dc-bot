@@ -1,18 +1,26 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -euo pipefail
 
-echo "--- 啟動簡易健康檢查服務 ---"
-python -m http.server 7860 >/dev/null 2>&1 &
+echo "=================================================="
+echo "🚀 subaso-俗北ㄙㄡˊ 啟動器"
+echo "=================================================="
 
+echo "[1/4] 檢查 Python 環境"
+python --version
+
+echo "[2/4] 安裝 Python 套件"
+pip install -r requirements.txt
+
+echo "[3/4] 檢查 Ollama 與模型"
 if command -v ollama >/dev/null 2>&1; then
-  echo "--- 檢測到 Ollama，啟動本地模型服務 ---"
+  echo "✅ 找到 Ollama，啟動本地服務..."
   ollama serve >/dev/null 2>&1 &
   sleep 5
-  echo "--- 正在確認/下載模型 ---"
-  ollama pull qwen2.5:1.5b || true
+  echo "📦 確認/下載推薦模型 Qwen2.5-1.5B..."
+  ollama pull Qwen2.5-1.5B || true
 else
-  echo "⚠️  未偵測到 Ollama；將直接啟動 Bot，但 AI 回答功能需在環境中安裝 Ollama 後再使用。"
+  echo "⚠️  未偵測到 Ollama；Bot 仍可啟動，但 AI 回答需要先安裝 Ollama。"
 fi
 
-echo "--- 正在啟動 Discord Bot ---"
+echo "[4/4] 啟動 Discord Bot"
 exec python bot.py
