@@ -1,0 +1,64 @@
+{
+  "logs": {
+    "0": [
+      {
+        "timestamp": "2026-06-15T21:02:07.624742",
+        "action": "admin_command",
+        "user": "1494283794637783041",
+        "reason": "stats"
+      },
+      {
+        "timestamp": "2026-06-15T21:03:03.945322",
+        "action": "admin_command",
+        "user": "1494283794637783041",
+        "reason": "status"
+      },
+      {
+        "timestamp": "2026-06-15T21:03:09.241400",
+        "action": "admin_command",
+        "user": "1494283794637783041",
+        "reason": "status"
+      },
+      {
+        "timestamp": "2026-06-15T21:03:27.933799",
+        "action": "admin_command",
+        "user": "1494283794637783041",
+        "reason": "stats"
+      },
+      {
+        "timestamp": "2026-06-15T21:04:05.941067",
+        "action": "admin_command",
+        "user": "1494283794637783041",
+        "reason": "logs 5"
+      },
+      {
+        "timestamp": "2026-06-15T21:04:16.963404",
+        "action": "admin_command",
+        "user": "1494283794637783041",
+        "reason": "logs 67"
+      },
+      {
+        "timestamp": "2026-06-15T21:04:39.435240",
+        "action": "admin_command",
+        "user": "1494283794637783041",
+        "reason": "leave bye~"
+      },
+      {
+        "timestamp": "2026-06-15T21:05:13.150924",
+        "action": "admin_command",
+        "user": "1494283794637783041",
+        "reason": "welcome 你好呀"
+      },
+      {
+        "timestamp": "2026-06-15T21:05:25.241898",
+        "action": "admin_command",
+        "user": "1494283794637783041",
+        "reason": "leave 再見~"
+      }
+    ]
+  },
+  "welcome_messages": {
+    "0_leave": "再見~",
+    "0": "你好呀"
+  }
+}
