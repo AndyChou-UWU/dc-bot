@@ -428,7 +428,7 @@ def create_review_ppt():
             "• 小規模應用"
         ],
         "模塊版本", [
-            "🏗️ prism_bot.py + 模塊",
+            "🏗️ subaso_bot.py + 模塊",
             "",
             "✓ 功能解耦",
             "✓ 易於維護",

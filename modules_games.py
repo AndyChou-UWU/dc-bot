@@ -1,5 +1,5 @@
 """
-PRISM Bot - 娛樂遊戲系統模塊
+subaso - 娛樂遊戲系統模塊
 包含: Pokemon猜謎、Trivia、動漫角色、數字遊戲、互動動作
 """
 

@@ -21,10 +21,11 @@ async def on_ready():
     
     if TEST_CHANNEL_ID > 0:
         try:
-            channel = client.get_channel(TEST_CHANNEL_ID)
+            # Use fetch_channel to ensure the channel is retrieved even if not cached
+            channel = await client.fetch_channel(TEST_CHANNEL_ID)
             if channel:
                 await channel.send("🧪 測試訊息 - Bot 發送訊息成功！")
-                print(f"✓ 成功發送測試訊息到頻道 {channel.name}")
+                print(f"✓ 成功發送測試訊息到頻道 {getattr(channel, 'name', channel.id)}")
             else:
                 print(f"✗ 找不到頻道 ID: {TEST_CHANNEL_ID}")
         except Exception as e:

@@ -1,6 +1,6 @@
 """
-PRISM Bot v2.0 - 多功能 Discord Bot
-包含 28 個強大功能的完整實現
+subaso v2.0 - 多功能 Discord Bot
+包含 28 個強大功能的完整實現（顯示名稱：subaso-俗北ㄙㄡˊ）
 
 功能模塊:
 🤖 AI 對話系統 (5個)
@@ -24,7 +24,7 @@ import httpx
 from modules_economy import EconomySystem, get_economy_commands
 from modules_games import GameSystem, get_game_commands
 from modules_admin import AdminSystem, get_admin_commands
-from prism_config import *
+from subaso_config import *
 
 # ==================== 日誌系統 ====================
 log_dir = "logs"
@@ -33,7 +33,7 @@ os.makedirs(log_dir, exist_ok=True)
 formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 
 file_handler = logging.FileHandler(
-    f"{log_dir}/prism_{datetime.now().strftime('%Y%m%d')}.log", 
+    f"{log_dir}/subaso_{datetime.now().strftime('%Y%m%d')}.log", 
     encoding='utf-8'
 )
 file_handler.setFormatter(formatter)
@@ -128,13 +128,13 @@ def save_all_user_data():
 # ==================== 事件處理 ====================
 @client.event
 async def on_ready():
-    logger.info(f"✓ PRISM Bot v{BOT_VERSION} 已連接！登入為: {client.user}")
+    logger.info(f"✓ {BOT_NAME} v{BOT_VERSION} 已連接！登入為: {client.user}")
     logger.info(f"✓ Ollama 端點: {OLLAMA_BASE_URL}")
     logger.info(f"✓ 使用模型: {OLLAMA_MODEL}")
     
     load_all_user_data()
     
-    print(f"✓ PRISM 已連接！登入為: {client.user}")
+    print(f"✓ {BOT_NAME} 已連接！登入為: {client.user}")
     print(f"✓ 當前版本: {BOT_VERSION}")
     print(f"✓ 已加載 28 個強大功能")
 
@@ -176,25 +176,25 @@ async def on_message(message):
     # 首次發送時顯示指南
     if user_id not in user_seen_guide:
         user_seen_guide[user_id] = True
-        guide = """
-👋 **歡迎使用 PRISM - 棱鏡 Bot**
+        guide = f"""
+    👋 **歡迎使用 {BOT_NAME}**
 
-🎊 已集成 **28 個強大功能**
+    🎊 已集成 **28 個強大功能**
 
-🤖 **AI 対話** (5個) - 多角色、多語言、連續對話
-💰 **經濟系統** (6個) - 挖礦、釣魚、賭博、寵物、市場
-🎮 **娛樂遊戲** (6個) - Pokemon、Trivia、動漫、數字遊戲
-⚙️ **管理工具** (5個) - 日誌、清理、歡迎、配置
-🎵 **音樂系統** (6個) - 可選 (需額外設置)
+    🤖 **AI 對話** (5個) - 多角色、多語言、連續對話
+    💰 **經濟系統** (6個) - 挖礦、釣魚、賭博、寵物、市場
+    🎮 **娛樂遊戲** (6個) - Pokemon、Trivia、動漫、數字遊戲
+    ⚙️ **管理工具** (5個) - 日誌、清理、歡迎、配置
+    🎵 **音樂系統** (6個) - 可選 (需額外設置)
 
-📖 **快速開始:**
-`!help` - 查看完整命令
-`!mode` - 切換 AI 角色
-`!balance` - 查看餘額
-`!pokemon` - 玩遊戲
+    📖 **快速開始:**
+    `!help` - 查看完整命令
+    `!mode` - 切換 AI 角色
+    `!balance` - 查看餘額
+    `!pokemon` - 玩遊戲
 
-祝使用愉快！🌈
-"""
+    祝使用愉快！🌈
+    """
         await message.channel.send(guide)
         return
     
@@ -447,11 +447,11 @@ async def on_message(message):
             await message.channel.send(f"❌ 清除失敗: {str(e)}")
     
     elif message.content.startswith("!help"):
-        help_text = """
-```
-╔════════════════════════════════════════╗
-║          PRISM Bot 完整命令列表         ║
-╚════════════════════════════════════════╝
+        help_text = f"""
+    ```
+    ╔════════════════════════════════════════╗
+    ║          {BOT_NAME} 完整命令列表         ║
+    ╚════════════════════════════════════════╝
 
 🤖 AI 對話:
 !mode [角色] - 切換 AI 角色
@@ -484,8 +484,8 @@ async def on_message(message):
         await message.channel.send(help_text)
     
     elif message.content.startswith("!guide"):
-        guide = """
-🎊 **PRISM Bot - 功能概覽**
+        guide = f"""
+    🎊 **{BOT_NAME} - 功能概覽**
 
 28 個強大功能已集成:
 
@@ -577,7 +577,7 @@ async def handle_admin_command(message):
     
     if cmd[0] == "stats":
         stats = f"""
-📊 **PRISM Bot 統計**
+    📊 **{BOT_NAME} 統計**
 總用戶: {len(user_personalities)}
 在線: {len(client.guilds)} 個伺服器
 版本: {BOT_VERSION}
@@ -605,7 +605,7 @@ async def broadcast_update_notification(new_version):
     save_all_user_data()
     
     update_message = f"""
-🎉 **PRISM Bot 系統更新** 🎉
+🎉 **{BOT_NAME} 系統更新** 🎉
 
 ✅ 已更新成 **{new_version}**
 
@@ -631,10 +631,10 @@ def main():
         print("❌ 錯誤: 未找到 DISCORD_TOKEN")
         return
     
-    logger.info("PRISM Bot v2.0 正在啟動...")
+    logger.info(f"{BOT_NAME} v{BOT_VERSION} 正在啟動...")
     print(f"""
 ╔════════════════════════════════════════╗
-║        🌈 PRISM Bot v{BOT_VERSION} 啟動中 🌈     ║
+║        🌈 {BOT_NAME} v{BOT_VERSION} 啟動中 🌈     ║
 ║                                        ║
 ║    包含 28 個強大功能的完整實現        ║
 ║                                        ║

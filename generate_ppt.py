@@ -132,11 +132,11 @@ def create_presentation():
     # ==================== 第 1 張：標題 ====================
     add_title_slide(prs, 
         "🤖 Discord Bot 項目",
-        "PRISM Bot v2.0\n多功能 AI 聊天機器人\n\n完整代碼與功能展示")
+        "subaso-俗北ㄙㄡˊ v2.0\n多功能 AI 聊天機器人\n\n完整代碼與功能展示")
     
     # ==================== 第 2 張：項目概述 ====================
     overview = """📊 項目信息
-• 名稱: PRISM Bot（subaso-俗北ㄙㄡˊ）
+• 名稱: subaso-俗北ㄙㄡˊ
 • 版本: 2.0.0
 • 平臺: Discord.py
 • AI引擎: Ollama (Qwen2.5-1.5B)
@@ -264,8 +264,8 @@ def create_presentation():
 
 📂 文件結構
 bot.py ......................... 單檔版（簡化版）
-prism_bot.py ................... 完整版（模組化入口）
-prism_config.py ................ 全局配置與常量
+subaso_bot.py ................... 完整版（模組化入口）
+subaso_config.py ................ 全局配置與常量
 modules_economy.py ............. 經濟系統類
 modules_games.py ............... 遊戲系統類
 modules_admin.py ............... 管理系統類
@@ -290,9 +290,9 @@ logging - 日誌系統
     bot_code = read_file(PROJECT_DIR / "bot.py", max_lines=30)
     add_content_slide(prs, "💻 bot.py - 核心入口 (前 30 行)", bot_code, is_code=True)
     
-    # ==================== 第 9 張：prism_config.py ====================
-    config_code = read_file(PROJECT_DIR / "prism_config.py", max_lines=35)
-    add_content_slide(prs, "⚙️ prism_config.py - 配置文件 (前 35 行)", config_code, is_code=True)
+    # ==================== 第 9 張：subaso_config.py ====================
+    config_code = read_file(PROJECT_DIR / "subaso_config.py", max_lines=35)
+    add_content_slide(prs, "⚙️ subaso_config.py - 配置文件 (前 35 行)", config_code, is_code=True)
     
     # ==================== 第 10 張：!mode 指令邏輯 ====================
     mode_snippet = """# !mode 指令 - 角色切換邏輯 (bot.py)
@@ -465,7 +465,7 @@ def save_all_user_data():
 
 4️⃣ 運行 Bot
    python bot.py        # 簡化版
-   python prism_bot.py   # 完整版（推薦）
+    python subaso_bot.py   # 完整版（推薦）
 
 5️⃣ 使用
    • 添加 Bot 到 Discord 伺服器

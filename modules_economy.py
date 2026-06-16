@@ -1,5 +1,5 @@
 """
-PRISM Bot - 經濟系統模塊
+subaso - 經濟系統模塊
 包含: 挖礦、釣魚、狩獵、賭博、寵物、市場交易
 """
 
@@ -9,7 +9,7 @@ import random
 import json
 import os
 from datetime import datetime, timedelta
-from prism_config import CURRENCY_NAME, MINING_REWARDS, FISHING_CATCHES, PETS, STARTING_BALANCE
+from subaso_config import CURRENCY_NAME, MINING_REWARDS, FISHING_CATCHES, PETS, STARTING_BALANCE
 
 ECONOMY_DATA_FILE = "data/economy.json"
 

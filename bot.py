@@ -1,5 +1,15 @@
-﻿import os
+﻿# ==================== 編碼修復 ====================
+# 必須在最開始設置，確保 UTF-8 輸出
+import os
 import sys
+
+if sys.platform == 'win32':
+    import io
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
+
+os.environ['PYTHONIOENCODING'] = 'utf-8'
+
 import discord
 import asyncio
 import aiohttp
@@ -8,13 +18,13 @@ import logging
 from datetime import datetime
 from dotenv import load_dotenv
 import httpx
-# 引入 prism_config 中的全局設定
-from prism_config import *
+# 引入 subaso_config 中的全局設定
+from subaso_config import *
 from modules_games import GameSystem
 from modules_admin import AdminSystem
 # 確保 PERSONALITIES 已正確載入（防止 import * 未帶入）
 if 'PERSONALITIES' not in globals():
-    from prism_config import PERSONALITIES  # pragma: no cover
+    from subaso_config import PERSONALITIES  # pragma: no cover
 
 
 # 解決 Windows 編碼問題
@@ -64,12 +74,12 @@ admin_env = os.getenv("ADMIN_IDS", "")
 ADMIN_IDS = [int(i.strip()) for i in admin_env.split(",") if i.strip().isdigit()]
 
 # ==================== 版本管理 ====================
-# 使用 prism_config 中的版本資訊
+# 使用 subaso_config 中的版本資訊
 BOT_VERSION = "2.0.0"
 last_notified_version = "2.0.0"
 # Bot 名稱（用於問候）
 BOT_NAME = "subaso-俗北ㄙㄡˊ"
-# 額外描述（來自 prism_config）
+# 額外描述（來自 subaso_config）
 BOT_DESCRIPTION = "subaso-俗北ㄙㄡˊ - 多功能 AI Discord Bot"
 
 # ==================== 數據文件 ====================
@@ -94,7 +104,7 @@ def save_user_data(data):
         logger.error(f"保存數據失敗: {e}")
 
 # ==================== 角色和數據 ====================
-# PERSONALITIES 已從 prism_config 引入，以下保持空白以避免覆寫
+# PERSONALITIES 已從 subaso_config 引入，以下保持空白以避免覆寫
 
 user_personalities = {}
 user_languages = {}
