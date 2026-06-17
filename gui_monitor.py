@@ -4,9 +4,21 @@ import os
 import psutil
 from datetime import datetime
 
-from PyQt6 import QtWidgets, QtCore, QtGui
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.figure import Figure
+print("[GUI] 正在初始化 PyQt6...", file=sys.stderr)
+
+try:
+    from PyQt6 import QtWidgets, QtCore, QtGui
+    from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+    from matplotlib.figure import Figure
+    import matplotlib
+    matplotlib.rcParams['font.family'] = 'sans-serif'
+    matplotlib.rcParams['font.sans-serif'] = ['Microsoft JhengHei', 'SimHei', 'Arial Unicode MS', 'DejaVu Sans']
+    matplotlib.rcParams['axes.unicode_minus'] = False
+    print("[GUI] ✅ PyQt6 和 Matplotlib 載入成功", file=sys.stderr)
+except ImportError as e:
+    print(f"[GUI] ❌ 缺少依賴: {e}", file=sys.stderr)
+    print(f"[GUI] 請執行: pip install PyQt6 matplotlib psutil", file=sys.stderr)
+    sys.exit(1)
 
 PROJECT_DIR = os.path.dirname(__file__)
 USER_DATA = os.path.join(PROJECT_DIR, 'user_data.json')
@@ -15,10 +27,12 @@ LOG_DIR = os.path.join(PROJECT_DIR, 'logs')
 
 class MonitorWindow(QtWidgets.QMainWindow):
     def __init__(self):
+        print("[GUI] 正在創建主視窗...", file=sys.stderr)
         super().__init__()
         self.setWindowTitle('subaso 🤖 管理監控面板')
         self.resize(1400, 900)
         self.start_time = datetime.now()
+        print("[GUI] ✅ 主視窗基礎設置完成", file=sys.stderr)
         
         # 設置樣式
         self.setStyleSheet("""
@@ -111,6 +125,7 @@ class MonitorWindow(QtWidgets.QMainWindow):
         self.timer.timeout.connect(self.refresh)
         
         self.refresh()
+        print("[GUI] ✅ 視窗初始化完成，準備顯示", file=sys.stderr)
 
     def create_dashboard_tab(self):
         """建立概況儀錶板"""
@@ -273,15 +288,16 @@ class MonitorWindow(QtWidgets.QMainWindow):
         users = {}
         personalities = {}
         languages = {}
+        lang_counts = {}
         
         if os.path.exists(USER_DATA):
             try:
                 with open(USER_DATA, 'r', encoding='utf-8') as f:
                     data = json.load(f)
                     users = data.get('personalities', {})
-                    personalities = {v: users.values().count(v) for v in set(users.values()) if v}
+                    personalities = {v: list(users.values()).count(v) for v in set(users.values()) if v}
                     languages = data.get('languages', {})
-                    lang_counts = {v: languages.values().count(v) for v in set(languages.values()) if v}
+                    lang_counts = {v: list(languages.values()).count(v) for v in set(languages.values()) if v}
             except Exception as e:
                 print(f'讀取數據失敗: {e}')
         
@@ -431,14 +447,34 @@ class MonitorWindow(QtWidgets.QMainWindow):
     def open_log_folder(self):
         """打開日誌資料夾"""
         if os.path.isdir(LOG_DIR):
-            QtCore.QDesktopServices.openUrl(QtCore.QUrl.fromLocalFile(os.path.abspath(LOG_DIR)))
+            path = os.path.abspath(LOG_DIR)
+            if sys.platform.startswith('win'):
+                os.startfile(path)
+            elif sys.platform.startswith('darwin'):
+                subprocess.Popen(['open', path])
+            else:
+                subprocess.Popen(['xdg-open', path])
 
 
 def main():
-    app = QtWidgets.QApplication(sys.argv)
-    w = MonitorWindow()
-    w.show()
-    sys.exit(app.exec())
+    print("[GUI] 正在啟動應用程式...", file=sys.stderr)
+    try:
+        app = QtWidgets.QApplication(sys.argv)
+        print("[GUI] ✅ QApplication 創建成功", file=sys.stderr)
+        
+        w = MonitorWindow()
+        print("[GUI] ✅ 視窗創建成功", file=sys.stderr)
+        
+        w.show()
+        print("[GUI] ✅ 視窗已顯示", file=sys.stderr)
+        print("[GUI] 🎉 subaso GUI 監控面板已啟動！", file=sys.stderr)
+        
+        sys.exit(app.exec())
+    except Exception as e:
+        print(f"[GUI] ❌ GUI 啟動失敗: {e}", file=sys.stderr)
+        import traceback
+        traceback.print_exc()
+        sys.exit(1)
 
 
 if __name__ == '__main__':

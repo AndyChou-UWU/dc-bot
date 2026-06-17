@@ -45,11 +45,24 @@ fi
 echo ""
 
 # 啟動 GUI 監控
-echo "[4/5] 啟動 GUI 監控 (後台)"
+echo "[4/5] 啟動 GUI 監控 (新視窗)"
 if [ -f "gui_monitor.py" ]; then
   echo "   📊 啟動 GUI 監控..."
-  nohup python gui_monitor.py >/dev/null 2>&1 &
-  GUI_PID=$!
+  
+  # 根據操作系統選擇啟動方式
+  if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" || "$OSTYPE" == "win32" ]]; then
+    # Windows (Git Bash / MSYS2)
+    start python gui_monitor.py
+    GUI_PID="(新視窗)"
+  elif [[ "$OSTYPE" == "darwin"* ]]; then
+    # macOS
+    nohup python gui_monitor.py >/dev/null 2>&1 &
+    GUI_PID=$!
+  else
+    # Linux
+    nohup python gui_monitor.py >/dev/null 2>&1 &
+    GUI_PID=$!
+  fi
   echo "   📍 GUI 監控 PID: $GUI_PID"
 else
   echo "   ⚠️  gui_monitor.py 不存在，跳過 GUI"

@@ -110,7 +110,12 @@ class GameSystem:
             return False, "沒有活躍的遊戲"
         
         game = self.active_games[user_id]
-        if guess.lower() == game["answer"].lower():
+        if game.get("type") != "pokemon":
+            return False, "目前沒有 Pokemon 猜謎遊戲，請先輸入 !pokemon 開始遊戲。"
+        
+        answer = str(game.get("answer", ""))
+        guess_text = str(guess).strip()
+        if guess_text.lower() == answer.lower():
             reward = 250
             if user_id not in self.user_scores:
                 self.user_scores[user_id] = 0
@@ -139,6 +144,7 @@ class GameSystem:
         self.active_games[user_id] = {
             "type": "trivia",
             "answer": trivia["answer"],
+            "options": trivia["options"],
             "category": trivia["category"],
             "timestamp": asyncio.get_event_loop().time()
         }
@@ -150,13 +156,22 @@ class GameSystem:
             return False, "沒有活躍的遊戲"
         
         game = self.active_games[user_id]
-        try:
-            trivia = TRIVIA_DB[answer_num - 1] if 1 <= answer_num <= len(TRIVIA_DB) else None
-        except:
+        if game.get("type") != "trivia":
+            return False, "目前沒有 Trivia 遊戲，請先輸入 !trivia 開始遊戲。"
+        
+        if not isinstance(answer_num, int) or answer_num < 1 or answer_num > len(game.get("options", [])):
             return False, "請輸入有效的答案號 (1-4)"
         
-        # 這裏簡化了邏輯，實際應該匹配正確答案
-        return True, f"✅ 正確答案是: {game['answer']}"
+        selected_option = game["options"][answer_num - 1]
+        if selected_option.lower() == str(game["answer"]).lower():
+            reward = 200
+            if user_id not in self.user_scores:
+                self.user_scores[user_id] = 0
+            self.user_scores[user_id] += reward
+            del self.active_games[user_id]
+            return True, f"✅ 恭喜你答對了！正確答案是 **{game['answer']}**。+{reward} 分"
+        else:
+            return False, f"❌ 錯誤。正確答案是 **{game['answer']}**。"
     
     # ==================== 動漫角色猜謎 ====================
     def start_anime_guess(self, user_id):
@@ -188,15 +203,21 @@ class GameSystem:
             return False, "沒有活躍的遊戲"
         
         game = self.active_games[user_id]
-        if guess.lower() == game["answer"].lower():
+        if game.get("type") != "anime":
+            return False, "目前沒有動漫角色猜謎遊戲，請先輸入 !anime 開始遊戲。"
+        
+        answer = str(game.get("answer", "")).lower()
+        anime_title = str(game.get("anime", "未知作品"))
+        guess_text = str(guess).strip()
+        if guess_text.lower() == answer:
             reward = 300
             if user_id not in self.user_scores:
                 self.user_scores[user_id] = 0
             self.user_scores[user_id] += reward
             del self.active_games[user_id]
-            return True, f"✅ 正確！這是 **{game['answer']}** 來自 **{game['anime']}**！+{reward} 分"
+            return True, f"✅ 正確！這是 **{game['answer']}** 來自 **{anime_title}**！+{reward} 分"
         else:
-            return False, f"❌ 錯誤。答案是 **{game['answer']}** 來自 **{game['anime']}**"
+            return False, f"❌ 錯誤。答案是 **{game['answer']}** 來自 **{anime_title}**"
     
     # ==================== 數字猜測遊戲 ====================
     def start_number_game(self, user_id):
@@ -224,6 +245,12 @@ class GameSystem:
             return False, "沒有活躍的遊戲"
         
         game = self.active_games[user_id]
+        if game.get("type") != "number":
+            return False, "目前沒有數字猜測遊戲，請先輸入 !number 開始遊戲。"
+        
+        if not isinstance(guess, int):
+            return False, "請輸入有效數字，例如: !guess_number 42"
+        
         game["attempts"] += 1
         
         if game["attempts"] > 10:

@@ -149,27 +149,449 @@ async def on_member_join(member):
 async def on_message(message):
     if message.author == client.user:
         return
-    if not isinstance(message.channel, discord.DMChannel):
-        if message.content.startswith("!"):
-            await message.channel.send(f"{message.author.mention} 💬 請在私信中使用命令！")
-        return
-    user_id = message.author.id
-    if user_id not in user_dms:
-        user_dms[user_id] = message.channel
-    if user_id not in user_seen_guide:
-        user_seen_guide[user_id] = True
-        guide = f"""
+    
+    try:
+        # 只在 DM 中回應
+        if not isinstance(message.channel, discord.DMChannel):
+            if message.content.startswith("!"):
+                await message.channel.send(f"{message.author.mention} 💬 請在私信中使用命令！")
+            return
+        
+        user_id = message.author.id
+        
+        # 保存用戶 DM 頻道
+        if user_id not in user_dms:
+            user_dms[user_id] = message.channel
+        
+        # 如果使用者還沒儲存預設個人設定，補上並持久化
+        if user_id not in user_personalities:
+            user_personalities[user_id] = "閒談"
+        if user_id not in user_languages:
+            user_languages[user_id] = "chinese"
+        save_all_user_data()
+        
+        # 首次發送時顯示指南
+        if user_id not in user_seen_guide:
+            user_seen_guide[user_id] = True
+            guide = f"""
 👋 **歡迎使用 {BOT_NAME}**
 
 🎊 已集成 **28 個強大功能**
 
+🤖 **AI 對話** (5個) - 多角色、多語言、連續對話
+💰 **經濟系統** (6個) - 挖礦、釣魚、賭博、寵物、市場
+🎮 **娛樂遊戲** (6個) - Pokemon、Trivia、動漫、數字遊戲
+⚙️ **管理工具** (5個) - 日誌、清理、歡迎、配置
+
 📖 **快速開始:**
 `!help` - 查看完整命令
+`!mode` - 切換 AI 角色
+`!ask` - 提問
+
+輸入 !help 獲取全部指令。
 """
         await message.channel.send(guide)
         return
+    
+    # 處理管理員命令
+    if message.content.startswith("!admin") and user_id in ADMIN_IDS:
+        await handle_admin_command(message)
+        return
+    
+    current_personality = user_personalities.get(user_id, "閒談")
+    
+    # AI 命令
+    if message.content.startswith("!mode"):
+        args = message.content[5:].strip().split()
+        if not args:
+            available = ", ".join(f"**{k}** {v['emoji']}" for k, v in PERSONALITIES.items())
+            await message.channel.send(f"目前角色: **{current_personality}**\n可用角色: {available}")
+            return
 
-    # 其餘功能請參考原本程式
+        raw_input = args[0].strip()
+        normalized = raw_input
+
+        if normalized not in PERSONALITIES:
+            alias_map = {
+                "chat": "閒談",
+                "math": "數理",
+                "science": "數理",
+                "language": "語文",
+                "lang": "語文",
+                "code": "程式",
+                "programming": "程式",
+                "home": "家務",
+                "house": "家務",
+            }
+            lowered = raw_input.lower()
+            if lowered in alias_map:
+                normalized = alias_map[lowered]
+            else:
+                matches = [k for k in PERSONALITIES.keys() if k.lower() == lowered]
+                if matches:
+                    normalized = matches[0]
+                else:
+                    fuzzy = [k for k in PERSONALITIES.keys() if lowered in k.lower()]
+                    if fuzzy:
+                        normalized = fuzzy[0]
+
+        if normalized in PERSONALITIES:
+            user_personalities[user_id] = normalized
+            save_all_user_data()
+            emoji = PERSONALITIES[normalized]['emoji']
+            await message.channel.send(f"✅ 已切換到 **{emoji} {normalized}** 模式")
+            logger.info(f"用戶 {user_id} 切換角色: {normalized}")
+        else:
+            available = ", ".join(f"**{k}**" for k in PERSONALITIES.keys())
+            await message.channel.send(f"❌ 不存在的角色類型。可用角色: {available}")
+
+    elif message.content.startswith("!lan"):
+        args = message.content[4:].strip().split()
+        if not args:
+            current_lang = user_languages.get(user_id, "chinese")
+            available = ", ".join(f"**{k}**" for k in LANGUAGE_OPTIONS.keys())
+            await message.channel.send(f"目前語言: **{current_lang}**\n可用語言: {available}")
+        else:
+            selected = args[0].strip('"\'').lower()
+            if selected in LANGUAGE_OPTIONS:
+                user_languages[user_id] = selected
+                save_all_user_data()
+                await message.channel.send(f"✅ 已切換語言為 **{LANGUAGE_OPTIONS[selected]}**")
+            else:
+                available = ", ".join(f"**{k}**" for k in LANGUAGE_OPTIONS.keys())
+                await message.channel.send(f"❌ 不支援的語言。可選: {available}")
+
+    elif message.content.startswith("!ask"):
+        question = message.content[5:].strip()
+        if not question:
+            await message.channel.send("請輸入問題 (!ask [你的問題])")
+            return
+        await handle_ai_request(message, question, current_personality)
+
+    elif message.content.startswith("!clear"):
+        if user_id in user_conversations:
+            del user_conversations[user_id]
+        await message.channel.send("✅ 已清除對話歷史")
+
+    elif message.content.startswith("!balance"):
+        balance = economy.get_balance(user_id)
+        await message.channel.send(f"💎 **你的餘額:** {balance} {CURRENCY_NAME}")
+
+    elif message.content.startswith("!mine"):
+        can_mine, remaining = economy.can_mine(user_id)
+        if not can_mine:
+            await message.channel.send(f"⏳ 還要等 {remaining} 秒才能再次挖礦")
+        else:
+            ore, amount, emoji = economy.mine(user_id)
+            await message.channel.send(f"{emoji} 你挖到了 **{ore}**！\n賺取 **{amount}** {CURRENCY_NAME}")
+
+    elif message.content.startswith("!fish"):
+        can_fish, remaining = economy.can_fish(user_id)
+        if not can_fish:
+            await message.channel.send(f"⏳ 還要等 {remaining} 秒才能再次釣魚")
+        else:
+            catch, amount, emoji = economy.fish(user_id)
+            await message.channel.send(f"{emoji} 你釣到了 **{catch}**！\n賺取 **{amount}** {CURRENCY_NAME}")
+
+    elif message.content.startswith("!hunt"):
+        can_hunt, remaining = economy.can_hunt(user_id)
+        if not can_hunt:
+            await message.channel.send(f"⏳ 還要等 {remaining} 秒才能再次狩獵")
+        else:
+            animal, amount, emoji = economy.hunt(user_id)
+            await message.channel.send(f"{emoji} 你獵到了 **{animal}**！\n賺取 **{amount}** {CURRENCY_NAME}")
+
+    elif message.content.startswith("!gamble"):
+        args = message.content[8:].strip().split()
+        if not args:
+            await message.channel.send("用法: !gamble [金額]")
+        else:
+            try:
+                amount = int(args[0])
+                won, winnings, msg = economy.gamble(user_id, amount)
+                if won is False and msg == "餘額不足":
+                    await message.channel.send(f"❌ 餘額不足")
+                elif won:
+                    await message.channel.send(f"🎉 {msg}\n獲得 {winnings} {CURRENCY_NAME}")
+                else:
+                    await message.channel.send(f"😢 {msg}")
+            except:
+                await message.channel.send("請輸入有效的金額")
+
+    elif message.content.startswith("!slots"):
+        args = message.content[7:].strip().split()
+        if not args:
+            await message.channel.send("用法: !slots [金額]")
+        else:
+            try:
+                amount = int(args[0])
+                won, winnings, result = economy.slots(user_id, amount)
+                symbols = "".join(result)
+                if won:
+                    await message.channel.send(f"🎰 {symbols}\n🎉 中獎！獲得 {winnings} {CURRENCY_NAME}")
+                else:
+                    await message.channel.send(f"🎰 {symbols}\n😢 沒中獎...")
+            except:
+                await message.channel.send("請輸入有效的金額")
+
+    elif message.content.startswith("!pet"):
+        args = message.content[5:].strip().split()
+        if not args:
+            await message.channel.send("用法: !pet [list|adopt|info|feed]")
+        elif args[0] == "list":
+            pets_list = "\n".join([f"**{name}** {info['emoji']}" for name, info in PETS.items()])
+            await message.channel.send(f"🐾 **可領養的寵物:**\n{pets_list}")
+        elif args[0] == "adopt" and len(args) > 1:
+            success, msg = economy.adopt_pet(user_id, args[1])
+            await message.channel.send(msg)
+        elif args[0] == "info":
+            pet = economy.get_pet(user_id)
+            if pet:
+                await message.channel.send(f"🐾 **你的寵物:**\n{pet['emoji']} {pet['name']}\n心情: {pet['mood']}/100")
+            else:
+                await message.channel.send("你還沒有寵物")
+        elif args[0] == "feed" and len(args) > 1:
+            try:
+                amount = int(args[1])
+                success, msg = economy.feed_pet(user_id, amount)
+                await message.channel.send(msg)
+            except:
+                await message.channel.send("請輸入有效的金額")
+
+    elif message.content.startswith("!pokemon"):
+        question = games.start_pokemon_game(user_id)
+        await message.channel.send(question)
+
+    elif message.content.startswith("!trivia"):
+        question = games.start_trivia(user_id)
+        await message.channel.send(question)
+
+    elif message.content.startswith("!anime"):
+        question = games.start_anime_guess(user_id)
+        await message.channel.send(question)
+
+    elif message.content.startswith("!number"):
+        question = games.start_number_game(user_id)
+        await message.channel.send(question)
+
+    elif message.content.startswith("!guess_number"):
+        args = message.content[13:].strip()
+        try:
+            guess_value = int(args)
+            result, msg = games.check_number_answer(user_id, guess_value)
+            await message.channel.send(msg)
+        except ValueError:
+            await message.channel.send("請輸入有效數字，例如: !guess_number 42")
+
+    elif message.content.startswith("!guess_char"):
+        args = message.content[12:].strip()
+        if not args:
+            await message.channel.send("用法: !guess_char [角色名字]")
+        else:
+            success, msg = games.check_anime_answer(user_id, args)
+            await message.channel.send(msg)
+
+    elif message.content.startswith("!answer"):
+        args = message.content[8:].strip()
+        try:
+            answer_num = int(args)
+            success, msg = games.check_trivia_answer(user_id, answer_num)
+            await message.channel.send(msg)
+        except ValueError:
+            await message.channel.send("請輸入有效答案號，例如: !answer 2")
+
+    elif message.content.startswith("!guess"):
+        args = message.content[7:].strip()
+        if not args:
+            await message.channel.send("用法: !guess [Pokemon 名字]")
+        else:
+            success, msg = games.check_pokemon_answer(user_id, args)
+            await message.channel.send(msg)
+
+    elif message.content.startswith("!score"):
+        score = games.get_user_score(user_id)
+        await message.channel.send(f"🏆 **你的遊戲分數:** {score} 分")
+
+    elif message.content.startswith("!hug"):
+        target = message.mentions[0].mention if message.mentions else "大家"
+        await message.channel.send(f"🤗 {message.author.mention} 擁抱了 {target}")
+
+    elif message.content.startswith("!pat"):
+        target = message.mentions[0].mention if message.mentions else "你"
+        await message.channel.send(f"👋 {message.author.mention} 拍了拍 {target}")
+
+    elif message.content.startswith("!dance"):
+        await message.channel.send(f"🕺 {message.author.mention} 跳起舞來！")
+
+    elif message.content.startswith("!help"):
+        help_text = f"""
+```\n╔════════════════════════════════════════╗
+║          {BOT_NAME} 完整命令列表         ║
+╚════════════════════════════════════════╝\n\n🤖 AI 對話:
+!mode [角色] - 切換 AI 角色
+!lan [語言] - 切換回答語言
+!ask [問題] - 提問
+
+💰 經濟系統:
+!balance - 查看餘額
+!mine - 挖礦 (60秒冷卻)
+!fish - 釣魚 (60秒冷卻)
+!hunt - 狩獵 (120秒冷卻)
+!gamble [金額] - 賭博
+!slots [金額] - 老虎機
+!pet [list|adopt|info|feed] - 寵物系統
+
+🎮 娛樂遊戲:
+!pokemon - Pokemon猜謎
+!trivia - Trivia知識競賽
+!anime - 動漫角色猜謎
+!number - 數字猜測遊戲
+!guess_number [數字] - 猜數字遊戲答案
+!guess_char [角色名字] - 猜動漫角色答案
+!answer [1-4] - Trivia 答案
+!score - 查看遊戲分數
+
+✨ 互動:
+!hug [@用戶] - 擁抱
+!pat [@用戶] - 拍拍
+!dance - 跳舞
+!help - 此幫助
+```"""
+        await message.channel.send(help_text)
+
+    else:
+        await message.channel.send("❓ 未知指令，輸入 !help 查看指令列表。")
+
+    except Exception as e:
+        logger.exception(f"on_message 處理失敗: {e}")
+        if isinstance(message.channel, discord.DMChannel):
+            try:
+                await message.channel.send("❌ 內部錯誤，請稍後再試。")
+            except:
+                pass
+
+
+async def handle_ai_request(message, question, personality):
+    user_id = message.author.id
+    
+    if user_id not in user_conversations:
+        user_conversations[user_id] = []
+    
+    try:
+        async with message.channel.typing():
+            language = user_languages.get(user_id, "chinese")
+            
+            # 強硬的身份提示
+            identity_prompt = """【重要】你的名字和身份如下，絕對不能改變或忘記：
+- 你叫做：subaso（俗北ㄙㄡˊ）
+- 你不是 Prism，不是任何其他 Bot
+- 你是一個多功能 AI Discord Bot，專為提供娛樂、經濟和管理功能而設計。
+- 你有多種角色和語言選項，但你的核心身份永遠是 subaso-俗北ㄙㄡˊ。
+- 不要編造任何其他名字或身份
+"""
+            
+            system_prompt = identity_prompt + PERSONALITIES[personality]["system"] + " " + LANGUAGE_PROMPTS.get(language, LANGUAGE_PROMPTS["chinese"])
+            
+            api_messages = [{"role": "system", "content": system_prompt}]
+            api_messages.extend(user_conversations[user_id])
+            api_messages.append({"role": "user", "content": question})
+
+            async with httpx.AsyncClient(timeout=None) as client_http:
+                payload = {
+                    "model": OLLAMA_MODEL,
+                    "messages": api_messages,
+                    "stream": False,
+                    "options": {"num_ctx": 4096}
+                }
+                response = await client_http.post(f"{OLLAMA_BASE_URL}/api/chat", json=payload)
+                response.raise_for_status()
+                result = response.json()
+                answer = result.get("message", {}).get("content", "⚠️ AI 未返回內容")
+
+            user_conversations[user_id].append({"role": "user", "content": question})
+            user_conversations[user_id].append({"role": "assistant", "content": answer})
+
+            if len(user_conversations[user_id]) > MAX_HISTORY * 2:
+                user_conversations[user_id] = user_conversations[user_id][-(MAX_HISTORY * 2):]
+
+            label = f"**【{PERSONALITIES[personality]['emoji']} {personality}】**\n"
+            if len(answer) + len(label) > 2000:
+                await message.channel.send(f"{label}(訊息過長，分段發送中...)")
+                for i in range(0, len(answer), 1900):
+                    await message.channel.send(answer[i:i+1900])
+            else:
+                await message.channel.send(f"{label}{answer}")
+
+    except Exception as e:
+        logger.error(f"AI 處理錯誤: {e}")
+        await message.channel.send(f"❌ 發生錯誤: {str(e)}")
+
+
+async def handle_admin_command(message):
+    user_id = message.author.id
+    cmd = message.content[6:].strip().split()
+    
+    if not cmd:
+        await message.channel.send("""
+```
+🔑 管理員命令:
+!admin stats - 查看統計
+!admin update [版本號] - 發送更新通知
+!admin clear_user [user_id] - 清除用戶數據
+!admin backup - 備份數據
+!admin restart - 重啟 Bot
+```
+""")
+        return
+    
+    if cmd[0] == "stats":
+        stats = f"""
+📊 **{BOT_NAME} 統計**
+總用戶: {len(user_personalities)}
+在線: {len(client.guilds)} 個伺服器
+版本: {BOT_VERSION}
+"""
+        await message.channel.send(stats)
+    
+    elif cmd[0] == "update" and len(cmd) > 1:
+        new_version = cmd[1]
+        await broadcast_update_notification(new_version)
+        await message.channel.send(f"✅ 已發送更新通知至所有用戶: 版本 {new_version}")
+    
+    elif cmd[0] == "backup":
+        save_all_user_data()
+        await message.channel.send("✅ 已備份數據")
+    
+    elif cmd[0] == "restart":
+        await message.channel.send("🔄 Bot 即將重啟...")
+        await client.close()
+
+
+async def broadcast_update_notification(new_version):
+    global BOT_VERSION, last_notified_version
+    BOT_VERSION = new_version
+    last_notified_version = new_version
+    save_all_user_data()
+    
+    update_message = f"""
+🎉 **{BOT_NAME} 系統更新** 🎉
+
+✅ 已更新成 **{new_version}**
+
+新版本已推送，感謝使用！
+"""
+    
+    success_count = 0
+    for user_id, dm_channel in list(user_dms.items()):
+        try:
+            await dm_channel.send(update_message)
+            success_count += 1
+            await asyncio.sleep(0.5)
+        except:
+            pass
+    
+    logger.info(f"更新通知已發送: 成功 {success_count}")
+
 
 def main():
     token = os.getenv("DISCORD_TOKEN")
