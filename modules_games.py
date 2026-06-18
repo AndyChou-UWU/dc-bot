@@ -76,106 +76,29 @@ ACTION_GIFS = {
 # ==================== 辯論話題 ====================
 DEBATE_TOPICS = [
     {
-        "topic": "🍕 披薩應該放鳳梨嗎？",
-        "side_a": "支持派🍍",
-        "side_b": "反對派❌",
-        "arguments_a": [
-            "酸甜結合，鹹甜配！",
-            "阿姨做的就是這樣啊",
-            "你沒吃過真正的夏威夷披薩",
-            "味道獨特，你根本不懂品味"
-        ],
-        "arguments_b": [
-            "披薩聖經上沒有這一頁！",
-            "這是對披薩文化的褻瀆",
-            "真正的意大利人會哭",
-            "水果不該在披薩上！"
-        ]
+        "topic": "披薩應該放鳳梨嗎？",
+        "side_a": "鳳梨派 🍍",
+        "side_b": "純粹派 ❌"
     },
     {
-        "topic": "☕ 咖啡應該加糖嗎？",
-        "side_a": "要加糖派🍬",
-        "side_b": "黑咖啡派🖤",
-        "arguments_a": [
-            "人生如此痛苦，咖啡怎能不甜？",
-            "能喝下去就是好咖啡",
-            "成年人不該自虐",
-            "糖是靈魂"
-        ],
-        "arguments_b": [
-            "真咖啡客喝的是原汁原味",
-            "加糖根本浪費好咖啡",
-            "你喝的是糖水，不是咖啡",
-            "健身白費了"
-        ]
+        "topic": "咖啡應該加糖嗎？",
+        "side_a": "甜咖派 🍬",
+        "side_b": "黑咖派 🖤"
     },
     {
-        "topic": "🌙 夜貓子 vs 早鳥人",
-        "side_a": "夜貓子🦉",
-        "side_b": "早鳥人🐓",
-        "arguments_a": [
-            "早上起床只是浪費生命",
-            "世界在晚上最安靜",
-            "創意都在深夜來臨",
-            "早起的蟲被鳥吃了"
-        ],
-        "arguments_b": [
-            "一日之計在於晨",
-            "早起的人才能看到日出",
-            "夜貓子根本是浪費時間的廢人",
-            "健康作息才是王道"
-        ]
+        "topic": "夜貓子和早鳥哪個更優？",
+        "side_a": "夜貓子 🦉",
+        "side_b": "早鳥 🐓"
     },
     {
-        "topic": "🍝 意粉該吃多軟？",
-        "side_a": "軟的派🍝",
-        "side_b": "有嚼勁派💪",
-        "arguments_a": [
-            "軟的好消化啊",
-            "牙好不了的人怎麼辦",
-            "咬不動才是美食",
-            "我就喜歡爛爛的"
-        ],
-        "arguments_b": [
-            "Al dente 才是正宗",
-            "沒嚼勁吃什麼呢",
-            "軟的根本是餐廳偷懶",
-            "嚼勁才有滿足感"
-        ]
+        "topic": "手機遊戲和電腦遊戲哪個更好？",
+        "side_a": "手機遊戲 📱",
+        "side_b": "電腦遊戲 💻"
     },
     {
-        "topic": "🎮 手機遊戲 vs 電腦遊戲",
-        "side_a": "手機遊戲派📱",
-        "side_b": "電腦遊戲派💻",
-        "arguments_a": [
-            "隨時隨地都能玩",
-            "根本不用裝備就能殺怪",
-            "畫質夠好了",
-            "方便玩家的勝利"
-        ],
-        "arguments_b": [
-            "手機遊戲都是垃圾",
-            "真正的遊戲在電腦上",
-            "還好意思叫遊戲",
-            "效能差十萬八千里"
-        ]
-    },
-    {
-        "topic": "🍜 陽春麵 vs 牛肉麵",
-        "side_a": "陽春麵派🍜",
-        "side_b": "牛肉麵派🐂",
-        "arguments_a": [
-            "簡單就是美",
-            "清湯見真章",
-            "25元就能吃飽",
-            "不用搞那麼複雜"
-        ],
-        "arguments_b": [
-            "沒肉的麵算什麼麵",
-            "一碗只要80，值！",
-            "滷汁才是靈魂",
-            "簡單的只是窮"
-        ]
+        "topic": "吃陽春麵還是牛肉麵更划算？",
+        "side_a": "陽春麵派 🍜",
+        "side_b": "牛肉麵派 🐂"
     }
 ]
 
@@ -391,26 +314,28 @@ class GameSystem:
     def start_debate(self):
         """開始辯論遊戲"""
         debate = random.choice(DEBATE_TOPICS)
-        
+
         message = f"""
 🎤 **辯論時間開始！** 🎤
 
 **議題**: {debate['topic']}
 
-**正方**: {debate['side_a']}
-論點：
+你要跟 AI 對戰，先選你的立場：
+- `!debate a` 支持 {debate['side_a']}
+- `!debate b` 支持 {debate['side_b']}
+
+選邊後，AI 會直接給出對方論點，接著你可以用 `!debate arg [你的論點]` 反駁。
+輸入 `!debate end` 可結束辯論，AI 充當評審判勝負。
 """
-        for i, arg in enumerate(debate['arguments_a'], 1):
-            message += f"  {i}. {arg}\n"
-        
-        message += f"\n**反方**: {debate['side_b']}\n論點：\n"
-        for i, arg in enumerate(debate['arguments_b'], 1):
-            message += f"  {i}. {arg}\n"
-        
-        message += f"\n選邊站隊: `!debate a` (支持 {debate['side_a']}) 或 `!debate b` (支持 {debate['side_b']})\n"
-        message += "哪一方會贏呢？你來評評理！"
-        
-        return message, debate
+        debate_data = {
+            'topic': debate['topic'],
+            'side_a': debate['side_a'],
+            'side_b': debate['side_b'],
+            'user_choice': None,
+            'chat_history': []
+        }
+
+        return message, debate_data
     
     def get_debate_result(self, debate, choice):
         """獲取辯論結果（搞笑的判決）"""

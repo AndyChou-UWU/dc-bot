@@ -509,18 +509,24 @@ class MonitorWindow(QtWidgets.QMainWindow):
             self.status_label.setText('正在生成代碼展示 PPT...')
             QtWidgets.QApplication.processEvents()
             
+            import sys
             result = subprocess.run([
                 sys.executable, script_path
-            ], capture_output=True, text=True, cwd=PROJECT_DIR)
+            ], capture_output=True, text=True, cwd=PROJECT_DIR, timeout=60)
             
             if result.returncode == 0:
-                QtWidgets.QMessageBox.information(self, '成功', 'PPT 已成功生成！\n' + result.stdout)
+                output_msg = result.stdout if result.stdout else 'PPT 已成功生成！'
+                QtWidgets.QMessageBox.information(self, '成功', output_msg)
                 self.status_label.setText('✅ 代碼展示 PPT 已生成')
             else:
-                QtWidgets.QMessageBox.critical(self, '失敗', f'生成 PPT 失敗：\n{result.stderr}')
+                error_msg = result.stderr if result.stderr else f'返回碼: {result.returncode}'
+                QtWidgets.QMessageBox.critical(self, '失敗', f'生成 PPT 失敗：\n{error_msg}')
                 self.status_label.setText('❌ PPT 生成失敗')
+        except subprocess.TimeoutExpired:
+            QtWidgets.QMessageBox.critical(self, '逾時', 'PPT 生成超過 60 秒，已中止')
+            self.status_label.setText('❌ PPT 生成逾時')
         except Exception as e:
-            QtWidgets.QMessageBox.critical(self, '錯誤', f'執行失敗：{e}')
+            QtWidgets.QMessageBox.critical(self, '錯誤', f'執行失敗：{str(e)}\n\nDEBUG:\nPROJECT_DIR: {PROJECT_DIR}\nsys.executable: {sys.executable}')
             self.status_label.setText('❌ 執行出錯')
 
     def generate_custom_ppt(self):
@@ -534,18 +540,24 @@ class MonitorWindow(QtWidgets.QMainWindow):
             self.status_label.setText('正在生成自定義 PPT...')
             QtWidgets.QApplication.processEvents()
             
+            import sys
             result = subprocess.run([
                 sys.executable, script_path
-            ], capture_output=True, text=True, cwd=PROJECT_DIR)
+            ], capture_output=True, text=True, cwd=PROJECT_DIR, timeout=60)
             
             if result.returncode == 0:
-                QtWidgets.QMessageBox.information(self, '成功', 'PPT 已成功生成！\n' + result.stdout)
+                output_msg = result.stdout if result.stdout else 'PPT 已成功生成！'
+                QtWidgets.QMessageBox.information(self, '成功', output_msg)
                 self.status_label.setText('✅ 自定義 PPT 已生成')
             else:
-                QtWidgets.QMessageBox.critical(self, '失敗', f'生成 PPT 失敗：\n{result.stderr}')
+                error_msg = result.stderr if result.stderr else f'返回碼: {result.returncode}'
+                QtWidgets.QMessageBox.critical(self, '失敗', f'生成 PPT 失敗：\n{error_msg}')
                 self.status_label.setText('❌ PPT 生成失敗')
+        except subprocess.TimeoutExpired:
+            QtWidgets.QMessageBox.critical(self, '逾時', 'PPT 生成超過 60 秒，已中止')
+            self.status_label.setText('❌ PPT 生成逾時')
         except Exception as e:
-            QtWidgets.QMessageBox.critical(self, '錯誤', f'執行失敗：{e}')
+            QtWidgets.QMessageBox.critical(self, '錯誤', f'執行失敗：{str(e)}\n\nDEBUG:\nPROJECT_DIR: {PROJECT_DIR}\nsys.executable: {sys.executable}')
             self.status_label.setText('❌ 執行出錯')
 
 

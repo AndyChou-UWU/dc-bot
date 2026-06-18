@@ -421,29 +421,109 @@ async def on_message(message):
             await message.channel.send(question)
 
         elif message.content.startswith("!debate"):
-            args = message.content[8:].strip().lower()
-            if args in ['a', 'b']:
-                # 用戶選擇了一方
-                if user_id in user_debates:
-                    debate = user_debates[user_id]
-                    result_info = games.get_debate_result(debate, args)
-                    if result_info:
-                        await message.channel.send(result_info["message"])
-                        # 更新分數
-                        if user_id not in games.user_scores:
-                            games.user_scores[user_id] = 0
-                        games.user_scores[user_id] += result_info["points"]
-                        # 清除辯論
-                        del user_debates[user_id]
-                    else:
-                        await message.channel.send("❌ 選擇無效，請輸入 a 或 b")
-                else:
-                    await message.channel.send("⚠️ 請先用 `!debate` 開始一場辯論")
-            else:
-                # 開始新的辯論
+            raw = message.content[8:].strip()
+            if not raw:
                 debate_msg, debate_data = games.start_debate()
                 user_debates[user_id] = debate_data
                 await message.channel.send(debate_msg)
+                return
+
+            args = raw.split(maxsplit=1)
+            command = args[0].lower()
+            debate = user_debates.get(user_id)
+
+            if command in ['a', 'b'] and len(args) == 1:
+                if not debate:
+                    await message.channel.send("⚠️ 請先用 `!debate` 開始一場辯論")
+                    return
+                if debate.get('user_choice'):
+                    await message.channel.send("⚠️ 你已經選過立場了，請使用 `!debate arg [你的論點]` 或 `!debate end`。")
+                    return
+
+                debate['user_choice'] = command
+                user_side = debate['side_a'] if command == 'a' else debate['side_b']
+                ai_side = debate['side_b'] if command == 'a' else debate['side_a']
+                topic = debate['topic']
+                prompt = (
+                    f"議題: {topic}\n"
+                    f"你是辯論對手，支持 {ai_side}。"
+                    "請針對該議題發表一段開場辯論，語句有力且具說服力，"
+                    "並在結尾鼓勵對方提出反駁。"
+                )
+                ai_response = await ask_ai_debate(message, prompt)
+                debate['chat_history'].append({'role': 'user', 'content': f'我選擇支持 {user_side} ({command})'})
+                debate['chat_history'].append({'role': 'assistant', 'content': ai_response})
+
+                await message.channel.send(
+                    f"你選擇支持 {user_side}，AI 對手支持 {ai_side}。\n\n"
+                    f"AI 開場：\n{ai_response}\n\n"
+                    "請輸入 `!debate arg [你的論點]` 來反駁，或輸入 `!debate end` 結束並判定勝負。"
+                )
+
+            elif command == 'arg' and len(args) == 2:
+                if not debate:
+                    await message.channel.send("⚠️ 請先用 `!debate` 開始一場辯論")
+                    return
+                if not debate.get('user_choice'):
+                    await message.channel.send("⚠️ 請先用 `!debate a` 或 `!debate b` 選擇立場")
+                    return
+
+                user_argument = args[1].strip()
+                user_side = debate['side_a'] if debate['user_choice'] == 'a' else debate['side_b']
+                ai_side = debate['side_b'] if debate['user_choice'] == 'a' else debate['side_a']
+                topic = debate['topic']
+                debate['chat_history'].append({'role': 'user', 'content': user_argument})
+
+                prompt = (
+                    f"議題: {topic}\n"
+                    f"你是辯論對手，支持 {ai_side}。"
+                    f"對方的論點是：{user_argument}\n"
+                    "請針對這個論點給出有力反駁，語氣機智、邏輯清晰。"
+                )
+                ai_response = await ask_ai_debate(message, prompt)
+                debate['chat_history'].append({'role': 'assistant', 'content': ai_response})
+
+                await message.channel.send(
+                    f"你的論點：{user_argument}\n\n"
+                    f"AI 反駁：{ai_response}\n\n"
+                    "你可以繼續輸入 `!debate arg [你的論點]` 再反駁，或輸入 `!debate end` 結束並判定勝負。"
+                )
+
+            elif command == 'end':
+                if not debate:
+                    await message.channel.send("⚠️ 目前沒有進行中的辯論")
+                    return
+                if not debate.get('user_choice'):
+                    await message.channel.send("⚠️ 請先用 `!debate a` 或 `!debate b` 選擇立場")
+                    return
+
+                user_side = debate['side_a'] if debate['user_choice'] == 'a' else debate['side_b']
+                ai_side = debate['side_b'] if debate['user_choice'] == 'a' else debate['side_a']
+                topic = debate['topic']
+                history_text = '\n'.join([f"{item['role']}: {item['content']}" for item in debate['chat_history']])
+                prompt = (
+                    f"你是公正的辯論評審。議題: {topic}\n"
+                    f"用戶支持: {user_side}\n"
+                    f"AI 對手支持: {ai_side}\n"
+                    f"辯論過程:\n{history_text}\n"
+                    "請總結雙方的論點並判定哪一方勝出，給出簡潔理由。"
+                )
+                ai_response = await ask_ai_debate(message, prompt)
+                if user_id in games.user_scores:
+                    games.user_scores[user_id] += 100
+                else:
+                    games.user_scores[user_id] = 100
+                del user_debates[user_id]
+                await message.channel.send(
+                    f"🧾 辯論結束。AI 評審結果：\n{ai_response}\n\n"
+                    f"🎁 你獲得 100 分，已累計至你的遊戲分數。"
+                )
+
+            else:
+                await message.channel.send(
+                    "❓ 無效的辯論指令。請輸入 `!debate` 開始、`!debate a` / `!debate b` 選邊、"
+                    "`!debate arg [你的論點]` 進行反駁，或 `!debate end` 結束辯論。"
+                )
 
         elif message.content.startswith("!guess_number"):
             args = message.content[13:].strip()
@@ -517,7 +597,7 @@ async def on_message(message):
 !trivia - Trivia知識競賽
 !anime - 動漫角色猜謎
 !number - 數字猜測遊戲
-!debate - 搞笑辯論對談 (輸入 !debate a 或 !debate b 選擇)
+!debate - 搞笑辯論對談 (輸入 !debate 開始，接著用 !debate a/b 選邊，或 !debate arg / !debate end)
 !guess_number [數字] - 猜數字遊戲答案
 !guess_char [角色名字] - 猜動漫角色答案
 !answer [1-4] - Trivia 答案
@@ -597,6 +677,34 @@ async def handle_ai_request(message, question, personality):
     except Exception as e:
         logger.error(f"AI 處理錯誤: {e}")
         await message.channel.send(f"❌ 發生錯誤: {str(e)}")
+
+
+async def ask_ai_debate(message, prompt):
+    try:
+        async with message.channel.typing():
+            system_prompt = (
+                "你是專業辯論對手，邏輯清晰、反駁有力，語氣可以幽默但不冒犯。"
+                "請針對指定辯題進行辯論，回覆時保持結構化、短小精悍。"
+            )
+            api_messages = [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": prompt}
+            ]
+
+            async with httpx.AsyncClient(timeout=None) as client_http:
+                payload = {
+                    "model": OLLAMA_MODEL,
+                    "messages": api_messages,
+                    "stream": False,
+                    "options": {"num_ctx": 4096}
+                }
+                response = await client_http.post(f"{OLLAMA_BASE_URL}/api/chat", json=payload)
+                response.raise_for_status()
+                result = response.json()
+                return result.get("message", {}).get("content", "⚠️ AI 未返回內容")
+    except Exception as e:
+        logger.error(f"AI 辯論處理錯誤: {e}")
+        return f"⚠️ AI 辯論失敗: {str(e)}"
 
 
 async def handle_admin_command(message):

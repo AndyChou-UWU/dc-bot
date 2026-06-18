@@ -60,17 +60,9 @@ if [ -f "gui_monitor.py" ]; then
   echo "   📊 啟動 GUI 監控..."
   
   if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" || "$OSTYPE" == "win32" ]]; then
-    if command -v cmd.exe >/dev/null 2>&1; then
-      cmd.exe /c "start \"subaso GUI\" python \"gui_monitor.py\""
-      GUI_PID="(新視窗)"
-    elif command -v powershell.exe >/dev/null 2>&1; then
-      powershell.exe -NoProfile -Command "Start-Process python -ArgumentList 'gui_monitor.py' -WorkingDirectory '$SCRIPT_DIR' -WindowStyle Normal"
-      GUI_PID="(新視窗)"
-    else
-      echo "   ⚠️ Windows 環境，但無法使用 cmd.exe 或 powershell.exe 開啟新視窗，改為直接執行。"
-      "$PYTHON_CMD" gui_monitor.py &
-      GUI_PID=$!
-    fi
+    echo "   🔧 Windows bash 環境，直接啟動 GUI 並 background 執行..."
+    "$PYTHON_CMD" gui_monitor.py >/dev/null 2>&1 &
+    GUI_PID=$!
   elif [[ "$OSTYPE" == "darwin"* ]]; then
     nohup "$PYTHON_CMD" gui_monitor.py >/dev/null 2>&1 &
     GUI_PID=$!
