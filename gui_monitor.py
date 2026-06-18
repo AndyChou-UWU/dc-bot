@@ -1,6 +1,7 @@
 import sys
 import json
 import os
+import subprocess
 import psutil
 from datetime import datetime
 
@@ -37,47 +38,66 @@ class MonitorWindow(QtWidgets.QMainWindow):
         # 設置樣式
         self.setStyleSheet("""
             QMainWindow {
-                background-color: #f5f5f5;
+                background-color: #f3f7fb;
             }
             QTabWidget::pane {
-                border: 1px solid #ddd;
+                border: 1px solid #d9d9d9;
+                background: #ffffff;
             }
             QTabBar::tab {
-                background-color: #e0e0e0;
-                padding: 8px 20px;
+                background-color: #eef2f6;
+                padding: 10px 24px;
                 margin-right: 2px;
+                border: 1px solid #d9d9d9;
+                border-bottom: none;
+                border-radius: 6px 6px 0 0;
             }
             QTabBar::tab:selected {
-                background-color: #4CAF50;
+                background-color: #4a90e2;
                 color: white;
                 font-weight: bold;
             }
             QLabel {
-                color: #333;
+                color: #2f3a45;
             }
             QPushButton {
-                background-color: #4CAF50;
+                background-color: #4a90e2;
                 color: white;
                 border: none;
-                border-radius: 4px;
-                padding: 8px 16px;
+                border-radius: 6px;
+                padding: 10px 18px;
                 font-weight: bold;
             }
             QPushButton:hover {
-                background-color: #45a049;
+                background-color: #3a78c1;
+            }
+            QCheckBox {
+                color: #2f3a45;
+                padding: 4px;
+            }
+            QComboBox, QTableWidget, QPlainTextEdit {
+                background-color: #ffffff;
+                border: 1px solid #d9d9d9;
+                border-radius: 6px;
+            }
+            QHeaderView::section {
+                background-color: #4a90e2;
+                color: white;
+                padding: 6px;
+                border: none;
             }
             QPlainTextEdit {
-                background-color: #1e1e1e;
-                color: #00ff00;
                 font-family: 'Consolas', 'Monaco', monospace;
-                font-size: 9pt;
-                border: 1px solid #ccc;
+                font-size: 10pt;
+                color: #202020;
             }
         """)
 
         central = QtWidgets.QWidget()
         self.setCentralWidget(central)
         layout = QtWidgets.QVBoxLayout(central)
+        layout.setContentsMargins(12, 12, 12, 12)
+        layout.setSpacing(12)
         
         # 建立 Tab 頁面
         self.tabs = QtWidgets.QTabWidget()
@@ -119,12 +139,17 @@ class MonitorWindow(QtWidgets.QMainWindow):
         btn_layout.addWidget(self.auto_refresh)
         
         layout.addLayout(btn_layout)
+
+        self.status_label = QtWidgets.QLabel('最後更新: 尚未加載')
+        self.status_label.setStyleSheet('color: #6f7d8c; font-size: 10pt;')
+        layout.addWidget(self.status_label)
         
         # 計時器用於自動刷新
         self.timer = QtCore.QTimer()
         self.timer.timeout.connect(self.refresh)
         
         self.refresh()
+        self.status_label.setText(f'最後更新: {datetime.now().strftime("%H:%M:%S")}')
         print("[GUI] ✅ 視窗初始化完成，準備顯示", file=sys.stderr)
 
     def create_dashboard_tab(self):
@@ -133,17 +158,20 @@ class MonitorWindow(QtWidgets.QMainWindow):
         layout = QtWidgets.QVBoxLayout(widget)
         
         # 統計卡片區
-        cards_layout = QtWidgets.QHBoxLayout()
+        cards_layout = QtWidgets.QGridLayout()
+        cards_layout.setHorizontalSpacing(12)
+        cards_layout.setVerticalSpacing(12)
+        cards_layout.setContentsMargins(0, 0, 0, 0)
         
         self.card_users = self.create_stat_card('👥 活躍用戶', '0', '#4CAF50')
-        self.card_personalities = self.create_stat_card('🎭 角色', '0', '#2196F3')
-        self.card_languages = self.create_stat_card('🌍 語言', '0', '#FF9800')
+        self.card_personalities = self.create_stat_card('🎭 角色數', '0', '#2196F3')
+        self.card_languages = self.create_stat_card('🌍 語言數', '0', '#FF9800')
         self.card_uptime = self.create_stat_card('⏱️ 運行時間', '--:--:--', '#9C27B0')
         
-        cards_layout.addWidget(self.card_users)
-        cards_layout.addWidget(self.card_personalities)
-        cards_layout.addWidget(self.card_languages)
-        cards_layout.addWidget(self.card_uptime)
+        cards_layout.addWidget(self.card_users, 0, 0)
+        cards_layout.addWidget(self.card_personalities, 0, 1)
+        cards_layout.addWidget(self.card_languages, 0, 2)
+        cards_layout.addWidget(self.card_uptime, 0, 3)
         
         layout.addLayout(cards_layout)
         
@@ -180,10 +208,13 @@ class MonitorWindow(QtWidgets.QMainWindow):
                 gridline-color: #ddd;
             }
             QHeaderView::section {
-                background-color: #4CAF50;
+                background-color: #4a90e2;
                 color: white;
-                padding: 5px;
+                padding: 6px;
                 border: none;
+            }
+            QTableWidget::item {
+                padding: 8px;
             }
         """)
         layout.addWidget(self.stats_table)
@@ -359,10 +390,12 @@ class MonitorWindow(QtWidgets.QMainWindow):
         """更新統計表格"""
         self.stats_table.setRowCount(0)
         
+        distinct_personalities = set(users.values()) if users else set()
+        distinct_languages = set(languages.values()) if languages else set()
         stats = [
             ('總用戶數', len(users), ''),
-            ('已配置角色', len(personalities), f"{', '.join(personalities.keys()) if personalities else '無'}"),
-            ('已配置語言', len(languages), f"{', '.join(set(languages.values())) if languages else '無'}"),
+            ('不同角色數', len(distinct_personalities), f"{', '.join(sorted(distinct_personalities)) if distinct_personalities else '無'}"),
+            ('不同語言數', len(distinct_languages), f"{', '.join(sorted(distinct_languages)) if distinct_languages else '無'}"),
         ]
         
         for i, (item, value, remark) in enumerate(stats):
@@ -375,7 +408,7 @@ class MonitorWindow(QtWidgets.QMainWindow):
         """更新系統信息"""
         try:
             import platform
-            cpu_percent = psutil.cpu_percent(interval=1)
+            cpu_percent = psutil.cpu_percent(interval=None)
             mem = psutil.virtual_memory()
             process = psutil.Process(os.getpid())
             proc_mem = process.memory_info().rss / 1024 / 1024  # MB

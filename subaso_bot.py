@@ -190,241 +190,241 @@ async def on_message(message):
 
 輸入 !help 獲取全部指令。
 """
-        await message.channel.send(guide)
-        return
-    
-    # 處理管理員命令
-    if message.content.startswith("!admin") and user_id in ADMIN_IDS:
-        await handle_admin_command(message)
-        return
-    
-    current_personality = user_personalities.get(user_id, "閒談")
-    
-    # AI 命令
-    if message.content.startswith("!mode"):
-        args = message.content[5:].strip().split()
-        if not args:
-            available = ", ".join(f"**{k}** {v['emoji']}" for k, v in PERSONALITIES.items())
-            await message.channel.send(f"目前角色: **{current_personality}**\n可用角色: {available}")
+            await message.channel.send(guide)
             return
+    
+        # 處理管理員命令
+        if message.content.startswith("!admin") and user_id in ADMIN_IDS:
+            await handle_admin_command(message)
+            return
+    
+        current_personality = user_personalities.get(user_id, "閒談")
+    
+        # AI 命令
+        if message.content.startswith("!mode"):
+            args = message.content[5:].strip().split()
+            if not args:
+                available = ", ".join(f"**{k}** {v['emoji']}" for k, v in PERSONALITIES.items())
+                await message.channel.send(f"目前角色: **{current_personality}**\n可用角色: {available}")
+                return
 
-        raw_input = args[0].strip()
-        normalized = raw_input
+            raw_input = args[0].strip()
+            normalized = raw_input
 
-        if normalized not in PERSONALITIES:
-            alias_map = {
-                "chat": "閒談",
-                "math": "數理",
-                "science": "數理",
-                "language": "語文",
-                "lang": "語文",
-                "code": "程式",
-                "programming": "程式",
-                "home": "家務",
-                "house": "家務",
-            }
-            lowered = raw_input.lower()
-            if lowered in alias_map:
-                normalized = alias_map[lowered]
-            else:
-                matches = [k for k in PERSONALITIES.keys() if k.lower() == lowered]
-                if matches:
-                    normalized = matches[0]
+            if normalized not in PERSONALITIES:
+                alias_map = {
+                    "chat": "閒談",
+                    "math": "數理",
+                    "science": "數理",
+                    "language": "語文",
+                    "lang": "語文",
+                    "code": "程式",
+                    "programming": "程式",
+                    "home": "家務",
+                    "house": "家務",
+                }
+                lowered = raw_input.lower()
+                if lowered in alias_map:
+                    normalized = alias_map[lowered]
                 else:
-                    fuzzy = [k for k in PERSONALITIES.keys() if lowered in k.lower()]
-                    if fuzzy:
-                        normalized = fuzzy[0]
+                    matches = [k for k in PERSONALITIES.keys() if k.lower() == lowered]
+                    if matches:
+                        normalized = matches[0]
+                    else:
+                        fuzzy = [k for k in PERSONALITIES.keys() if lowered in k.lower()]
+                        if fuzzy:
+                            normalized = fuzzy[0]
 
-        if normalized in PERSONALITIES:
-            user_personalities[user_id] = normalized
-            save_all_user_data()
-            emoji = PERSONALITIES[normalized]['emoji']
-            await message.channel.send(f"✅ 已切換到 **{emoji} {normalized}** 模式")
-            logger.info(f"用戶 {user_id} 切換角色: {normalized}")
-        else:
-            available = ", ".join(f"**{k}**" for k in PERSONALITIES.keys())
-            await message.channel.send(f"❌ 不存在的角色類型。可用角色: {available}")
-
-    elif message.content.startswith("!lan"):
-        args = message.content[4:].strip().split()
-        if not args:
-            current_lang = user_languages.get(user_id, "chinese")
-            available = ", ".join(f"**{k}**" for k in LANGUAGE_OPTIONS.keys())
-            await message.channel.send(f"目前語言: **{current_lang}**\n可用語言: {available}")
-        else:
-            selected = args[0].strip('"\'').lower()
-            if selected in LANGUAGE_OPTIONS:
-                user_languages[user_id] = selected
+            if normalized in PERSONALITIES:
+                user_personalities[user_id] = normalized
                 save_all_user_data()
-                await message.channel.send(f"✅ 已切換語言為 **{LANGUAGE_OPTIONS[selected]}**")
+                emoji = PERSONALITIES[normalized]['emoji']
+                await message.channel.send(f"✅ 已切換到 **{emoji} {normalized}** 模式")
+                logger.info(f"用戶 {user_id} 切換角色: {normalized}")
             else:
+                available = ", ".join(f"**{k}**" for k in PERSONALITIES.keys())
+                await message.channel.send(f"❌ 不存在的角色類型。可用角色: {available}")
+
+        elif message.content.startswith("!lan"):
+            args = message.content[4:].strip().split()
+            if not args:
+                current_lang = user_languages.get(user_id, "chinese")
                 available = ", ".join(f"**{k}**" for k in LANGUAGE_OPTIONS.keys())
-                await message.channel.send(f"❌ 不支援的語言。可選: {available}")
-
-    elif message.content.startswith("!ask"):
-        question = message.content[5:].strip()
-        if not question:
-            await message.channel.send("請輸入問題 (!ask [你的問題])")
-            return
-        await handle_ai_request(message, question, current_personality)
-
-    elif message.content.startswith("!clear"):
-        if user_id in user_conversations:
-            del user_conversations[user_id]
-        await message.channel.send("✅ 已清除對話歷史")
-
-    elif message.content.startswith("!balance"):
-        balance = economy.get_balance(user_id)
-        await message.channel.send(f"💎 **你的餘額:** {balance} {CURRENCY_NAME}")
-
-    elif message.content.startswith("!mine"):
-        can_mine, remaining = economy.can_mine(user_id)
-        if not can_mine:
-            await message.channel.send(f"⏳ 還要等 {remaining} 秒才能再次挖礦")
-        else:
-            ore, amount, emoji = economy.mine(user_id)
-            await message.channel.send(f"{emoji} 你挖到了 **{ore}**！\n賺取 **{amount}** {CURRENCY_NAME}")
-
-    elif message.content.startswith("!fish"):
-        can_fish, remaining = economy.can_fish(user_id)
-        if not can_fish:
-            await message.channel.send(f"⏳ 還要等 {remaining} 秒才能再次釣魚")
-        else:
-            catch, amount, emoji = economy.fish(user_id)
-            await message.channel.send(f"{emoji} 你釣到了 **{catch}**！\n賺取 **{amount}** {CURRENCY_NAME}")
-
-    elif message.content.startswith("!hunt"):
-        can_hunt, remaining = economy.can_hunt(user_id)
-        if not can_hunt:
-            await message.channel.send(f"⏳ 還要等 {remaining} 秒才能再次狩獵")
-        else:
-            animal, amount, emoji = economy.hunt(user_id)
-            await message.channel.send(f"{emoji} 你獵到了 **{animal}**！\n賺取 **{amount}** {CURRENCY_NAME}")
-
-    elif message.content.startswith("!gamble"):
-        args = message.content[8:].strip().split()
-        if not args:
-            await message.channel.send("用法: !gamble [金額]")
-        else:
-            try:
-                amount = int(args[0])
-                won, winnings, msg = economy.gamble(user_id, amount)
-                if won is False and msg == "餘額不足":
-                    await message.channel.send(f"❌ 餘額不足")
-                elif won:
-                    await message.channel.send(f"🎉 {msg}\n獲得 {winnings} {CURRENCY_NAME}")
-                else:
-                    await message.channel.send(f"😢 {msg}")
-            except:
-                await message.channel.send("請輸入有效的金額")
-
-    elif message.content.startswith("!slots"):
-        args = message.content[7:].strip().split()
-        if not args:
-            await message.channel.send("用法: !slots [金額]")
-        else:
-            try:
-                amount = int(args[0])
-                won, winnings, result = economy.slots(user_id, amount)
-                symbols = "".join(result)
-                if won:
-                    await message.channel.send(f"🎰 {symbols}\n🎉 中獎！獲得 {winnings} {CURRENCY_NAME}")
-                else:
-                    await message.channel.send(f"🎰 {symbols}\n😢 沒中獎...")
-            except:
-                await message.channel.send("請輸入有效的金額")
-
-    elif message.content.startswith("!pet"):
-        args = message.content[5:].strip().split()
-        if not args:
-            await message.channel.send("用法: !pet [list|adopt|info|feed]")
-        elif args[0] == "list":
-            pets_list = "\n".join([f"**{name}** {info['emoji']}" for name, info in PETS.items()])
-            await message.channel.send(f"🐾 **可領養的寵物:**\n{pets_list}")
-        elif args[0] == "adopt" and len(args) > 1:
-            success, msg = economy.adopt_pet(user_id, args[1])
-            await message.channel.send(msg)
-        elif args[0] == "info":
-            pet = economy.get_pet(user_id)
-            if pet:
-                await message.channel.send(f"🐾 **你的寵物:**\n{pet['emoji']} {pet['name']}\n心情: {pet['mood']}/100")
+                await message.channel.send(f"目前語言: **{current_lang}**\n可用語言: {available}")
             else:
-                await message.channel.send("你還沒有寵物")
-        elif args[0] == "feed" and len(args) > 1:
-            try:
-                amount = int(args[1])
-                success, msg = economy.feed_pet(user_id, amount)
+                selected = args[0].strip('"\'').lower()
+                if selected in LANGUAGE_OPTIONS:
+                    user_languages[user_id] = selected
+                    save_all_user_data()
+                    await message.channel.send(f"✅ 已切換語言為 **{LANGUAGE_OPTIONS[selected]}**")
+                else:
+                    available = ", ".join(f"**{k}**" for k in LANGUAGE_OPTIONS.keys())
+                    await message.channel.send(f"❌ 不支援的語言。可選: {available}")
+
+        elif message.content.startswith("!ask"):
+            question = message.content[5:].strip()
+            if not question:
+                await message.channel.send("請輸入問題 (!ask [你的問題])")
+                return
+            await handle_ai_request(message, question, current_personality)
+
+        elif message.content.startswith("!clear"):
+            if user_id in user_conversations:
+                del user_conversations[user_id]
+            await message.channel.send("✅ 已清除對話歷史")
+
+        elif message.content.startswith("!balance"):
+            balance = economy.get_balance(user_id)
+            await message.channel.send(f"💎 **你的餘額:** {balance} {CURRENCY_NAME}")
+
+        elif message.content.startswith("!mine"):
+            can_mine, remaining = economy.can_mine(user_id)
+            if not can_mine:
+                await message.channel.send(f"⏳ 還要等 {remaining} 秒才能再次挖礦")
+            else:
+                ore, amount, emoji = economy.mine(user_id)
+                await message.channel.send(f"{emoji} 你挖到了 **{ore}**！\n賺取 **{amount}** {CURRENCY_NAME}")
+
+        elif message.content.startswith("!fish"):
+            can_fish, remaining = economy.can_fish(user_id)
+            if not can_fish:
+                await message.channel.send(f"⏳ 還要等 {remaining} 秒才能再次釣魚")
+            else:
+                catch, amount, emoji = economy.fish(user_id)
+                await message.channel.send(f"{emoji} 你釣到了 **{catch}**！\n賺取 **{amount}** {CURRENCY_NAME}")
+
+        elif message.content.startswith("!hunt"):
+            can_hunt, remaining = economy.can_hunt(user_id)
+            if not can_hunt:
+                await message.channel.send(f"⏳ 還要等 {remaining} 秒才能再次狩獵")
+            else:
+                animal, amount, emoji = economy.hunt(user_id)
+                await message.channel.send(f"{emoji} 你獵到了 **{animal}**！\n賺取 **{amount}** {CURRENCY_NAME}")
+
+        elif message.content.startswith("!gamble"):
+            args = message.content[8:].strip().split()
+            if not args:
+                await message.channel.send("用法: !gamble [金額]")
+            else:
+                try:
+                    amount = int(args[0])
+                    won, winnings, msg = economy.gamble(user_id, amount)
+                    if won is False and msg == "餘額不足":
+                        await message.channel.send(f"❌ 餘額不足")
+                    elif won:
+                        await message.channel.send(f"🎉 {msg}\n獲得 {winnings} {CURRENCY_NAME}")
+                    else:
+                        await message.channel.send(f"😢 {msg}")
+                except:
+                    await message.channel.send("請輸入有效的金額")
+
+        elif message.content.startswith("!slots"):
+            args = message.content[7:].strip().split()
+            if not args:
+                await message.channel.send("用法: !slots [金額]")
+            else:
+                try:
+                    amount = int(args[0])
+                    won, winnings, result = economy.slots(user_id, amount)
+                    symbols = "".join(result)
+                    if won:
+                        await message.channel.send(f"🎰 {symbols}\n🎉 中獎！獲得 {winnings} {CURRENCY_NAME}")
+                    else:
+                        await message.channel.send(f"🎰 {symbols}\n😢 沒中獎...")
+                except:
+                    await message.channel.send("請輸入有效的金額")
+
+        elif message.content.startswith("!pet"):
+            args = message.content[5:].strip().split()
+            if not args:
+                await message.channel.send("用法: !pet [list|adopt|info|feed]")
+            elif args[0] == "list":
+                pets_list = "\n".join([f"**{name}** {info['emoji']}" for name, info in PETS.items()])
+                await message.channel.send(f"🐾 **可領養的寵物:**\n{pets_list}")
+            elif args[0] == "adopt" and len(args) > 1:
+                success, msg = economy.adopt_pet(user_id, args[1])
                 await message.channel.send(msg)
-            except:
-                await message.channel.send("請輸入有效的金額")
+            elif args[0] == "info":
+                pet = economy.get_pet(user_id)
+                if pet:
+                    await message.channel.send(f"🐾 **你的寵物:**\n{pet['emoji']} {pet['name']}\n心情: {pet['mood']}/100")
+                else:
+                    await message.channel.send("你還沒有寵物")
+            elif args[0] == "feed" and len(args) > 1:
+                try:
+                    amount = int(args[1])
+                    success, msg = economy.feed_pet(user_id, amount)
+                    await message.channel.send(msg)
+                except:
+                    await message.channel.send("請輸入有效的金額")
 
-    elif message.content.startswith("!pokemon"):
-        question = games.start_pokemon_game(user_id)
-        await message.channel.send(question)
+        elif message.content.startswith("!pokemon"):
+            question = games.start_pokemon_game(user_id)
+            await message.channel.send(question)
 
-    elif message.content.startswith("!trivia"):
-        question = games.start_trivia(user_id)
-        await message.channel.send(question)
+        elif message.content.startswith("!trivia"):
+            question = games.start_trivia(user_id)
+            await message.channel.send(question)
 
-    elif message.content.startswith("!anime"):
-        question = games.start_anime_guess(user_id)
-        await message.channel.send(question)
+        elif message.content.startswith("!anime"):
+            question = games.start_anime_guess(user_id)
+            await message.channel.send(question)
 
-    elif message.content.startswith("!number"):
-        question = games.start_number_game(user_id)
-        await message.channel.send(question)
+        elif message.content.startswith("!number"):
+            question = games.start_number_game(user_id)
+            await message.channel.send(question)
 
-    elif message.content.startswith("!guess_number"):
-        args = message.content[13:].strip()
-        try:
-            guess_value = int(args)
-            result, msg = games.check_number_answer(user_id, guess_value)
-            await message.channel.send(msg)
-        except ValueError:
-            await message.channel.send("請輸入有效數字，例如: !guess_number 42")
+        elif message.content.startswith("!guess_number"):
+            args = message.content[13:].strip()
+            try:
+                guess_value = int(args)
+                result, msg = games.check_number_answer(user_id, guess_value)
+                await message.channel.send(msg)
+            except ValueError:
+                await message.channel.send("請輸入有效數字，例如: !guess_number 42")
 
-    elif message.content.startswith("!guess_char"):
-        args = message.content[12:].strip()
-        if not args:
-            await message.channel.send("用法: !guess_char [角色名字]")
-        else:
-            success, msg = games.check_anime_answer(user_id, args)
-            await message.channel.send(msg)
+        elif message.content.startswith("!guess_char"):
+            args = message.content[12:].strip()
+            if not args:
+                await message.channel.send("用法: !guess_char [角色名字]")
+            else:
+                success, msg = games.check_anime_answer(user_id, args)
+                await message.channel.send(msg)
 
-    elif message.content.startswith("!answer"):
-        args = message.content[8:].strip()
-        try:
-            answer_num = int(args)
-            success, msg = games.check_trivia_answer(user_id, answer_num)
-            await message.channel.send(msg)
-        except ValueError:
-            await message.channel.send("請輸入有效答案號，例如: !answer 2")
+        elif message.content.startswith("!answer"):
+            args = message.content[8:].strip()
+            try:
+                answer_num = int(args)
+                success, msg = games.check_trivia_answer(user_id, answer_num)
+                await message.channel.send(msg)
+            except ValueError:
+                await message.channel.send("請輸入有效答案號，例如: !answer 2")
 
-    elif message.content.startswith("!guess"):
-        args = message.content[7:].strip()
-        if not args:
-            await message.channel.send("用法: !guess [Pokemon 名字]")
-        else:
-            success, msg = games.check_pokemon_answer(user_id, args)
-            await message.channel.send(msg)
+        elif message.content.startswith("!guess"):
+            args = message.content[7:].strip()
+            if not args:
+                await message.channel.send("用法: !guess [Pokemon 名字]")
+            else:
+                success, msg = games.check_pokemon_answer(user_id, args)
+                await message.channel.send(msg)
 
-    elif message.content.startswith("!score"):
-        score = games.get_user_score(user_id)
-        await message.channel.send(f"🏆 **你的遊戲分數:** {score} 分")
+        elif message.content.startswith("!score"):
+            score = games.get_user_score(user_id)
+            await message.channel.send(f"🏆 **你的遊戲分數:** {score} 分")
 
-    elif message.content.startswith("!hug"):
-        target = message.mentions[0].mention if message.mentions else "大家"
-        await message.channel.send(f"🤗 {message.author.mention} 擁抱了 {target}")
+        elif message.content.startswith("!hug"):
+            target = message.mentions[0].mention if message.mentions else "大家"
+            await message.channel.send(f"🤗 {message.author.mention} 擁抱了 {target}")
 
-    elif message.content.startswith("!pat"):
-        target = message.mentions[0].mention if message.mentions else "你"
-        await message.channel.send(f"👋 {message.author.mention} 拍了拍 {target}")
+        elif message.content.startswith("!pat"):
+            target = message.mentions[0].mention if message.mentions else "你"
+            await message.channel.send(f"👋 {message.author.mention} 拍了拍 {target}")
 
-    elif message.content.startswith("!dance"):
-        await message.channel.send(f"🕺 {message.author.mention} 跳起舞來！")
+        elif message.content.startswith("!dance"):
+            await message.channel.send(f"🕺 {message.author.mention} 跳起舞來！")
 
-    elif message.content.startswith("!help"):
-        help_text = f"""
+        elif message.content.startswith("!help"):
+            help_text = f"""
 ```\n╔════════════════════════════════════════╗
 ║          {BOT_NAME} 完整命令列表         ║
 ╚════════════════════════════════════════╝\n\n🤖 AI 對話:
@@ -457,10 +457,10 @@ async def on_message(message):
 !dance - 跳舞
 !help - 此幫助
 ```"""
-        await message.channel.send(help_text)
+            await message.channel.send(help_text)
 
-    else:
-        await message.channel.send("❓ 未知指令，輸入 !help 查看指令列表。")
+        else:
+            await message.channel.send("❓ 未知指令，輸入 !help 查看指令列表。")
 
     except Exception as e:
         logger.exception(f"on_message 處理失敗: {e}")
@@ -558,6 +558,21 @@ async def handle_admin_command(message):
         await broadcast_update_notification(new_version)
         await message.channel.send(f"✅ 已發送更新通知至所有用戶: 版本 {new_version}")
     
+    elif cmd[0] == "clear_user" and len(cmd) > 1:
+        try:
+            target_id = int(cmd[1])
+        except ValueError:
+            await message.channel.send("❌ 請輸入有效的 user_id")
+            return
+        if target_id in user_personalities:
+            del user_personalities[target_id]
+            user_languages.pop(target_id, None)
+            user_conversations.pop(target_id, None)
+            save_all_user_data()
+            await message.channel.send(f"✅ 已清除用戶 {target_id} 的數據")
+        else:
+            await message.channel.send("❌ 用戶不存在")
+
     elif cmd[0] == "backup":
         save_all_user_data()
         await message.channel.send("✅ 已備份數據")
@@ -565,6 +580,9 @@ async def handle_admin_command(message):
     elif cmd[0] == "restart":
         await message.channel.send("🔄 Bot 即將重啟...")
         await client.close()
+
+    else:
+        await message.channel.send("❓ 未知的管理員指令，輸入 !admin 查看可用指令。")
 
 
 async def broadcast_update_notification(new_version):
