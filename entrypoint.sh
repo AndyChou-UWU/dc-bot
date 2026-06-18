@@ -41,19 +41,19 @@ if command -v ollama >/dev/null 2>&1; then
   OLLAMA_PID=$!
   echo "   📍 Ollama PID: $OLLAMA_PID"
   sleep 3
-  echo "   📥 確認/下載推薦模型 Qwen2.5-1.5B..."
+  MODEL_NAME="qwen2.5:1.5b"
+  echo "   📥 確認/下載推薦模型 ${MODEL_NAME}..."
   if command -v timeout >/dev/null 2>&1; then
-    timeout 300 ollama pull Qwen2.5-1.5B || true
+    timeout 300 ollama pull "$MODEL_NAME" || true
   else
-    ollama pull Qwen2.5-1.5B || true
+    ollama pull "$MODEL_NAME" || true
   fi
-  echo "   ✅ 模型準備完成"
+  echo "   ✅ 模型準備完成（若無法拉取，可手動安裝或更換模型名稱）"
 else
   echo "⚠️  未找到 Ollama；Bot 仍可啟動，但 AI 回答需要先安裝 Ollama"
   echo "   💡 下載: https://ollama.ai"
 fi
 echo ""
-
 # 啟動 GUI 監控
 echo "[4/5] 啟動 GUI 監控 (新視窗)"
 if [ -f "gui_monitor.py" ]; then
@@ -61,10 +61,13 @@ if [ -f "gui_monitor.py" ]; then
   
   if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" || "$OSTYPE" == "win32" ]]; then
     if command -v cmd.exe >/dev/null 2>&1; then
-      cmd.exe /c start "subaso GUI" "$PYTHON_CMD" gui_monitor.py
+      cmd.exe /c "start \"subaso GUI\" python \"gui_monitor.py\""
+      GUI_PID="(新視窗)"
+    elif command -v powershell.exe >/dev/null 2>&1; then
+      powershell.exe -NoProfile -Command "Start-Process python -ArgumentList 'gui_monitor.py' -WorkingDirectory '$SCRIPT_DIR' -WindowStyle Normal"
       GUI_PID="(新視窗)"
     else
-      echo "   ⚠️ Windows 環境，但無法使用 cmd.exe 開啟新視窗，改為直接執行。"
+      echo "   ⚠️ Windows 環境，但無法使用 cmd.exe 或 powershell.exe 開啟新視窗，改為直接執行。"
       "$PYTHON_CMD" gui_monitor.py &
       GUI_PID=$!
     fi
