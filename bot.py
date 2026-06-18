@@ -15,7 +15,7 @@ import asyncio
 import aiohttp
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from dotenv import load_dotenv
 import httpx
 # 引入 subaso_config 中的全局設定
@@ -82,6 +82,10 @@ BOT_NAME = "subaso-俗北ㄙㄡˊ"
 # 額外描述（來自 subaso_config）
 BOT_DESCRIPTION = "subaso-俗北ㄙㄡˊ - 多功能 AI Discord Bot"
 
+# 星期三自動更新相關
+last_auto_update_date = None
+AUTO_UPDATE_HOUR = 0  # 每天 00:00 檢查
+
 # ==================== 數據文件 ====================
 DATA_FILE = "user_data.json"
 
@@ -111,6 +115,7 @@ user_languages = {}
 user_conversations = {}
 user_seen_guide = {}
 user_dms = {}  # 存儲用戶的 DM 頻道用於廣播
+user_debates = {}  # 存儲用戶當前的辯論
 MAX_HISTORY = 10
 
 games = GameSystem()
@@ -135,7 +140,7 @@ LANGUAGE_PROMPTS = {
 # 加載已保存的用戶數據
 def load_all_user_data():
     """從文件加載所有用戶數據"""
-    global user_personalities, user_languages, user_conversations
+    global user_personalities, user_languages, user_conversations, user_seen_guide, user_debates
     data = load_user_data()
     if "personalities" in data:
         user_personalities = {int(k): v for k, v in data["personalities"].items()}
@@ -143,15 +148,21 @@ def load_all_user_data():
         user_languages = {int(k): v for k, v in data["languages"].items()}
     if "conversations" in data:
         user_conversations = data["conversations"]
+    if "seen_guide" in data:
+        user_seen_guide = data["seen_guide"]
+    if "debates" in data:
+        user_debates = data["debates"]
     logger.info(f"加載了 {len(user_personalities)} 個用戶的數據")
 
 def save_all_user_data():
     """保存所有用戶數據到文件"""
-    global user_personalities, user_languages, user_conversations, BOT_VERSION, last_notified_version
+    global user_personalities, user_languages, user_conversations, user_seen_guide, user_debates, BOT_VERSION, last_notified_version
     data = {
         "personalities": {str(k): v for k, v in user_personalities.items()},
         "languages": {str(k): v for k, v in user_languages.items()},
         "conversations": user_conversations,
+        "seen_guide": user_seen_guide,
+        "debates": user_debates,
         "last_save": datetime.now().isoformat(),
         "bot_version": BOT_VERSION,
         "last_notified_version": last_notified_version
@@ -167,6 +178,33 @@ def load_version_info():
     if "last_notified_version" in data:
         last_notified_version = data["last_notified_version"]
 
+async def weekly_auto_update_task():
+    """後台任務：每週三 00:00 自動觸發版本更新檢查"""
+    global last_auto_update_date
+    
+    while True:
+        try:
+            now = datetime.now()
+            # 檢查是否是星期三 (weekday() 返回 0-6，其中 2 是星期三)
+            if now.weekday() == 2 and now.hour == AUTO_UPDATE_HOUR:
+                # 檢查今天是否已執行過
+                today = now.date()
+                if last_auto_update_date != today:
+                    last_auto_update_date = today
+                    logger.info(f"⏰ 星期三自動更新檢查觸發! 版本: {BOT_VERSION}")
+                    
+                    # 觸發更新通知
+                    if len(user_dms) > 0:
+                        await broadcast_update_notification(BOT_VERSION)
+                    else:
+                        logger.info("暫無用戶連接，跳過更新通知")
+            
+            # 每分鐘檢查一次
+            await asyncio.sleep(60)
+        except Exception as e:
+            logger.error(f"自動更新任務出錯: {e}")
+            await asyncio.sleep(60)
+
 # ==================== 事件處理 ====================
 @client.event
 async def on_ready():
@@ -177,6 +215,10 @@ async def on_ready():
     # 加載用戶數據
     load_all_user_data()
     load_version_info()
+    
+    # 啟動星期三自動更新後台任務
+    asyncio.create_task(weekly_auto_update_task())
+    logger.info("✓ 星期三自動更新任務已啟動")
     
     # 檢查版本更新
     await check_and_notify_updates()
@@ -354,6 +396,31 @@ async def on_message(message):
     elif message.content.startswith("!number"):
         await message.channel.send(games.start_number_game(user_id))
 
+    elif message.content.startswith("!debate"):
+        args = message.content[8:].strip().lower()
+        if args in ['a', 'b']:
+            # 用戶選擇了一方
+            if user_id in user_debates:
+                debate = user_debates[user_id]
+                result_info = games.get_debate_result(debate, args)
+                if result_info:
+                    await message.channel.send(result_info["message"])
+                    # 更新分數
+                    if user_id not in games.user_scores:
+                        games.user_scores[user_id] = 0
+                    games.user_scores[user_id] += result_info["points"]
+                    # 清除辯論
+                    del user_debates[user_id]
+                else:
+                    await message.channel.send("❌ 選擇無效，請輸入 a 或 b")
+            else:
+                await message.channel.send("⚠️ 請先用 `!debate` 開始一場辯論")
+        else:
+            # 開始新的辯論
+            debate_msg, debate_data = games.start_debate()
+            user_debates[user_id] = debate_data
+            await message.channel.send(debate_msg)
+
     elif message.content.startswith("!guess"):
         _, msg = games.check_pokemon_answer(user_id, message.content[6:].strip())
         await message.channel.send(msg)
@@ -444,6 +511,7 @@ async def on_message(message):
 !trivia - 開始 Trivia 知識競賽
 !anime - 開始 動漫角色 猜謎
 !number - 開始 數字猜測 遊戲
+!debate - 開始搞笑辯論對談 (輸入 !debate a 或 !debate b 選擇)
 !guess [名字] / !guess_char [名字] / !guess_number [數字] - 回答遊戲
 !score - 查看遊戲分數
 !hug [@用戶] / !pat [@用戶] / !dance - 互動動作

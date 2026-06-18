@@ -248,7 +248,8 @@ def create_presentation():
 🎮 遊戲
 !pokemon - Pokemon猜謎 | !trivia - Trivia競賽
 !anime - 動漫角色 | !number - 數字遊戲
-!score - 查看遊戲分數 | !guess [答案] - 提交答案
+!debate - 搞笑辯論 | !score - 查看遊戲分數
+!guess [答案] - 提交答案
 
 ✨ 互動
 !hug [@用戶] - 擁抱 | !pat [@用戶] - 拍拍 | !dance - 跳舞
@@ -479,7 +480,35 @@ user_data.json     - 用戶數據
     
     add_content_slide(prs, "🚀 部署與使用", deployment, is_code=False)
     
-    # ==================== 第 16 張：總結 ====================
+    # ==================== 第 16 張：Discord Bot 還能做什麼 ====================
+    extras_content = """💡 Discord Bot 還能做什麼 ?
+看看別人都在做什麼，你的專題可以參考
+
+🔧 AI 與實用工具
+• AI 助手 — 今天的 /ask 就是起點
+• 翻譯 bot — 貼原文自動翻譯多國語言
+• 程式碼執行 bot — 在線即時執行 code
+
+👥 社群管理
+• 自動管理 bot — 過濾廣告、阻止洗版、ban 機器人
+• 歡迎 bot — 新成員加入自動打招呼 + 發規則
+• 通知 bot — 定時公告、生日提醒、事件提醒
+
+🎮 娛樂與遊戲
+• 小遊戲 bot — 猜數字、問答、狼人殺、RPG
+• 音樂 bot — 點歌播放
+• 排行榜 — 等級、每日簽到
+
+🔌 整合外部服務
+• API bot — 查天氣、新聞、股價、空氣品質
+• 抓資料 bot — 抓網頁內容、監控關鍵字、PTT 爬文
+• 排程 bot — 接 Google Calendar、提醒排程
+
+📚 最好的學習方式：找一個你自己會用的 bot 功能，動手做出來！"""
+    
+    add_content_slide(prs, "💡 Discord Bot 還能做什麼 ?", extras_content, is_code=False)
+    
+    # ==================== 第 17 張：總結 ====================
     summary = """📌 項目總結
 
 🎯 目標達成

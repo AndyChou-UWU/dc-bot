@@ -132,6 +132,16 @@ class MonitorWindow(QtWidgets.QMainWindow):
         self.open_logs_btn.setFixedWidth(150)
         btn_layout.addWidget(self.open_logs_btn)
         
+        self.generate_ppt_btn = QtWidgets.QPushButton('📊 生成代碼展示 PPT')
+        self.generate_ppt_btn.clicked.connect(self.generate_ppt)
+        self.generate_ppt_btn.setFixedWidth(150)
+        btn_layout.addWidget(self.generate_ppt_btn)
+        
+        self.generate_custom_ppt_btn = QtWidgets.QPushButton('🎨 生成自定義 PPT')
+        self.generate_custom_ppt_btn.clicked.connect(self.generate_custom_ppt)
+        self.generate_custom_ppt_btn.setFixedWidth(150)
+        btn_layout.addWidget(self.generate_custom_ppt_btn)
+        
         btn_layout.addStretch()
         
         self.auto_refresh = QtWidgets.QCheckBox('自動重新整理 (5秒)')
@@ -487,6 +497,56 @@ class MonitorWindow(QtWidgets.QMainWindow):
                 subprocess.Popen(['open', path])
             else:
                 subprocess.Popen(['xdg-open', path])
+
+    def generate_ppt(self):
+        """生成代碼展示 PPT"""
+        try:
+            script_path = os.path.join(PROJECT_DIR, 'generate_ppt.py')
+            if not os.path.exists(script_path):
+                QtWidgets.QMessageBox.warning(self, '錯誤', '找不到 generate_ppt.py')
+                return
+            
+            self.status_label.setText('正在生成代碼展示 PPT...')
+            QtWidgets.QApplication.processEvents()
+            
+            result = subprocess.run([
+                sys.executable, script_path
+            ], capture_output=True, text=True, cwd=PROJECT_DIR)
+            
+            if result.returncode == 0:
+                QtWidgets.QMessageBox.information(self, '成功', 'PPT 已成功生成！\n' + result.stdout)
+                self.status_label.setText('✅ 代碼展示 PPT 已生成')
+            else:
+                QtWidgets.QMessageBox.critical(self, '失敗', f'生成 PPT 失敗：\n{result.stderr}')
+                self.status_label.setText('❌ PPT 生成失敗')
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self, '錯誤', f'執行失敗：{e}')
+            self.status_label.setText('❌ 執行出錯')
+
+    def generate_custom_ppt(self):
+        """生成自定義 PPT"""
+        try:
+            script_path = os.path.join(PROJECT_DIR, 'generate_custom_ppt.py')
+            if not os.path.exists(script_path):
+                QtWidgets.QMessageBox.warning(self, '錯誤', '找不到 generate_custom_ppt.py')
+                return
+            
+            self.status_label.setText('正在生成自定義 PPT...')
+            QtWidgets.QApplication.processEvents()
+            
+            result = subprocess.run([
+                sys.executable, script_path
+            ], capture_output=True, text=True, cwd=PROJECT_DIR)
+            
+            if result.returncode == 0:
+                QtWidgets.QMessageBox.information(self, '成功', 'PPT 已成功生成！\n' + result.stdout)
+                self.status_label.setText('✅ 自定義 PPT 已生成')
+            else:
+                QtWidgets.QMessageBox.critical(self, '失敗', f'生成 PPT 失敗：\n{result.stderr}')
+                self.status_label.setText('❌ PPT 生成失敗')
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self, '錯誤', f'執行失敗：{e}')
+            self.status_label.setText('❌ 執行出錯')
 
 
 def main():

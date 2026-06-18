@@ -17,12 +17,18 @@ echo ""
 
 # 檢查 Python
 echo "[1/5] 檢查 Python 環境"
-python --version
+PYTHON_CMD="$(command -v python || command -v python3 || true)"
+if [ -z "$PYTHON_CMD" ]; then
+  echo "❌ 找不到 Python 執行檔。請先安裝 Python。"
+  exit 1
+fi
+$PYTHON_CMD --version
 echo ""
 
 # 安裝依賴
 echo "[2/5] 安裝 Python 套件"
-pip install -r requirements.txt -q
+"$PYTHON_CMD" -m pip install --upgrade pip
+"$PYTHON_CMD" -m pip install -r requirements.txt -q
 echo "✅ 依賴安裝完成"
 echo ""
 
@@ -36,7 +42,11 @@ if command -v ollama >/dev/null 2>&1; then
   echo "   📍 Ollama PID: $OLLAMA_PID"
   sleep 3
   echo "   📥 確認/下載推薦模型 Qwen2.5-1.5B..."
-  timeout 300 ollama pull Qwen2.5-1.5B || true
+  if command -v timeout >/dev/null 2>&1; then
+    timeout 300 ollama pull Qwen2.5-1.5B || true
+  else
+    ollama pull Qwen2.5-1.5B || true
+  fi
   echo "   ✅ 模型準備完成"
 else
   echo "⚠️  未找到 Ollama；Bot 仍可啟動，但 AI 回答需要先安裝 Ollama"
@@ -49,18 +59,21 @@ echo "[4/5] 啟動 GUI 監控 (新視窗)"
 if [ -f "gui_monitor.py" ]; then
   echo "   📊 啟動 GUI 監控..."
   
-  # 根據操作系統選擇啟動方式
   if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" || "$OSTYPE" == "win32" ]]; then
-    # Windows (Git Bash / MSYS2)
-    start python gui_monitor.py
-    GUI_PID="(新視窗)"
+    if command -v cmd.exe >/dev/null 2>&1; then
+      cmd.exe /c start "subaso GUI" "$PYTHON_CMD" gui_monitor.py
+      GUI_PID="(新視窗)"
+    else
+      echo "   ⚠️ Windows 環境，但無法使用 cmd.exe 開啟新視窗，改為直接執行。"
+      "$PYTHON_CMD" gui_monitor.py &
+      GUI_PID=$!
+    fi
   elif [[ "$OSTYPE" == "darwin"* ]]; then
-    # macOS
-    nohup python gui_monitor.py >/dev/null 2>&1 &
+    nohup "$PYTHON_CMD" gui_monitor.py >/dev/null 2>&1 &
     GUI_PID=$!
   else
     # Linux
-    nohup python gui_monitor.py >/dev/null 2>&1 &
+    nohup "$PYTHON_CMD" gui_monitor.py >/dev/null 2>&1 &
     GUI_PID=$!
   fi
   echo "   📍 GUI 監控 PID: $GUI_PID"
@@ -76,4 +89,4 @@ echo "🤖 subaso-俗北ㄙㄡˊ 正在啟動..."
 echo "=================================================="
 echo ""
 
-exec python subaso_bot.py
+exec "$PYTHON_CMD" subaso_bot.py
