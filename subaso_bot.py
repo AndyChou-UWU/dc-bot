@@ -9,8 +9,10 @@ import sys
 
 if sys.platform == 'win32':
     import io
+    import asyncio as _asyncio
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
     sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
+    _asyncio.set_event_loop_policy(_asyncio.WindowsSelectorEventLoopPolicy())
 
 os.environ['PYTHONIOENCODING'] = 'utf-8'
 
@@ -18,6 +20,7 @@ import discord
 import asyncio
 import json
 import logging
+import socket
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 import httpx
@@ -791,17 +794,37 @@ async def broadcast_update_notification(new_version):
     logger.info(f"更新通知已發送: 成功 {success_count}")
 
 
+def check_discord_dns():
+    targets = ["gateway.discord.gg", "discord.com"]
+    failures = []
+    for host in targets:
+        try:
+            socket.getaddrinfo(host, 443)
+        except socket.gaierror as e:
+            failures.append(f"{host}: {e}")
+    return failures
+
+
 def main():
     token = os.getenv("DISCORD_TOKEN")
     if not token:
         logger.error("未找到 DISCORD_TOKEN")
         print("❌ 錯誤: 未找到 DISCORD_TOKEN")
         return
+
+    dns_failures = check_discord_dns()
+    if dns_failures:
+        logger.error("Discord DNS 解析失敗，請檢查網路或 DNS 設定。詳細: %s", " | ".join(dns_failures))
+        print("❌ Discord DNS 解析失敗，請檢查網路或 DNS 設定。")
+
     logger.info(f"{BOT_NAME} v{BOT_VERSION} 正在啟動...")
     try:
         client.run(token)
     except KeyboardInterrupt:
         logger.info("Bot 被用戶中斷")
+    except socket.gaierror as e:
+        logger.error(f"DNS 解析錯誤: {e}")
+        raise
     except Exception as e:
         logger.error(f"Bot 運行錯誤: {e}")
         raise
