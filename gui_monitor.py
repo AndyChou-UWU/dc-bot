@@ -198,6 +198,32 @@ class MonitorWindow(QtWidgets.QMainWindow):
         
         return widget
 
+    def show_conversation_dialog(self, user_id):
+        """顯示完整對話的簡易視窗"""
+        try:
+            with open(USER_DATA, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                conversations = data.get('conversations', {})
+                messages = conversations.get(str(user_id), []) or conversations.get(int(user_id), [])
+        except Exception as e:
+            messages = []
+
+        dlg = QtWidgets.QDialog(self)
+        dlg.setWindowTitle(f'對話: {user_id}')
+        dlg.resize(800, 600)
+        v = QtWidgets.QVBoxLayout(dlg)
+        text = QtWidgets.QPlainTextEdit()
+        text.setReadOnly(True)
+        lines = []
+        for m in messages:
+            t = m.get('time', '')
+            r = m.get('role', '')
+            c = m.get('content', '')
+            lines.append(f"[{t}] {r}: {c}")
+        text.setPlainText('\n'.join(lines) if lines else '無對話資料')
+        v.addWidget(text)
+        dlg.exec()
+
     def create_stats_tab(self):
         """建立統計頁面"""
         widget = QtWidgets.QWidget()
@@ -474,6 +500,13 @@ class MonitorWindow(QtWidgets.QMainWindow):
                         self.stats_table.setItem(0, 0, QtWidgets.QTableWidgetItem('無資料'))
                         self.stats_table.setItem(0, 1, QtWidgets.QTableWidgetItem('0'))
                         self.stats_table.setItem(0, 2, QtWidgets.QTableWidgetItem('沒有會話資料'))
+
+                    # 美化與自動調整欄寬
+                    self.stats_table.setAlternatingRowColors(True)
+                    self.stats_table.resizeColumnsToContents()
+                    # 連接雙擊打開對話視窗（放在 try 內）
+                    self.stats_table.cellDoubleClicked.connect(self._on_stats_double_click)
+
             except Exception as e:
                 print(f'讀取會話數據失敗: {e}')
 
@@ -523,6 +556,15 @@ class MonitorWindow(QtWidgets.QMainWindow):
             self.canvas_mem.draw()
         except Exception as e:
             self.system_label.setText(f'讀取系統信息失敗: {e}')
+
+    def _on_stats_double_click(self, row, column):
+        try:
+            item = self.stats_table.item(row, 0)
+            if item:
+                user_id = item.text()
+                self.show_conversation_dialog(user_id)
+        except Exception as e:
+            print(f'雙擊打開對話失敗: {e}', file=sys.stderr)
 
     def update_logs(self):
         """更新日誌顯示"""

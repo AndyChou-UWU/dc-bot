@@ -1,0 +1,38 @@
+{
+  "personalities": {
+    "1494283794637783041": "閒談"
+  },
+  "languages": {
+    "1494283794637783041": "chinese"
+  },
+  "conversations": {
+    "1494283794637783041": [
+      {
+        "role": "user",
+        "content": "你好"
+      },
+      {
+        "role": "assistant",
+        "content": "你好！👋 有什么我可以帮助你的嗎？"
+      }
+    ],
+    "1494283794637783041": [
+      {
+        "role": "user",
+        "content": "你好"
+      },
+      {
+        "role": "assistant",
+        "content": "您好！我叫subaso-俗北ㄙㄡˊ，很高兴能和你聊天。有什么我可以帮您的嗎？"
+      }
+    ]
+  },
+  "seen_guide": {
+    "1494283794637783041": true,
+    "1494283794637783041": true
+  },
+  "debates": {},
+  "last_save": "2026-06-19T15:57:24.482746",
+  "bot_version": "2.0.0",
+  "last_notified_version": "2.0.0"
+}

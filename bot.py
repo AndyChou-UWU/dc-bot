@@ -102,10 +102,26 @@ def load_user_data():
     return {}
 
 def save_user_data(data):
-    """保存用戶數據"""
+    """保存用戶數據（使用原子替換以避免並發寫入導致損壞）"""
+    import tempfile
     try:
-        with open(DATA_FILE, 'w', encoding='utf-8') as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
+        dirpath = os.path.dirname(os.path.abspath(DATA_FILE)) or '.'
+        # 寫入暫存檔
+        fd, tmp_path = tempfile.mkstemp(prefix='user_data_', dir=dirpath, text=True)
+        try:
+            with os.fdopen(fd, 'w', encoding='utf-8') as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
+                f.flush()
+                os.fsync(f.fileno())
+            # 原子替換
+            os.replace(tmp_path, DATA_FILE)
+        finally:
+            # 確保暫存檔不存在
+            if os.path.exists(tmp_path):
+                try:
+                    os.remove(tmp_path)
+                except Exception:
+                    pass
     except Exception as e:
         logger.error(f"保存數據失敗: {e}")
 
@@ -694,6 +710,13 @@ async def handle_ai_request(message, question, personality):
             ts = datetime.now().isoformat()
             user_conversations[user_id].append({"role": "user", "content": question, "time": ts})
             user_conversations[user_id].append({"role": "assistant", "content": answer, "time": ts})
+
+            # 強化日誌：記錄每次問答以便追蹤與還原
+            try:
+                logger.info(f"CONV_LOG | user={user_id} | time={ts} | question={question}")
+                logger.info(f"CONV_LOG | user={user_id} | time={ts} | answer={answer[:1000]}")
+            except Exception:
+                pass
 
             # 限制歷史長度
             if len(user_conversations[user_id]) > MAX_HISTORY * 2:
