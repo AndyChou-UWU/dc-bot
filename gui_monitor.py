@@ -238,23 +238,17 @@ class MonitorWindow(QtWidgets.QMainWindow):
         
         # 詳細統計表格
         self.stats_table = QtWidgets.QTableWidget()
-        # 欄位: 用戶ID, 消息數, 最後用戶消息, 最後消息時間, AI 回答
-        self.stats_table.setColumnCount(5)
-        self.stats_table.setHorizontalHeaderLabels(['用戶ID', '消息數', '最後消息內容', '最後消息時間', 'AI 回答'])
+        self.stats_table.setColumnCount(3)
+        self.stats_table.setHorizontalHeaderLabels(['用戶ID', '消息數', '最後消息內容'])
         self.stats_table.horizontalHeader().setStretchLastSection(True)
+        self.stats_table.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows)
+        self.stats_table.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.SingleSelection)
+        self.stats_table.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
+        self.stats_table.cellDoubleClicked.connect(self._on_stats_double_click)
         self.stats_table.setStyleSheet("""
             QTableWidget {
                 background-color: white;
-                color: #222; /* 文字顏色改為深色，避免白底白字 */
                 gridline-color: #ddd;
-            }
-            /* 編輯器與選取時的文字顏色 */
-            QTableWidget QLineEdit, QTableWidget QPlainTextEdit, QTableWidget QSpinBox {
-                color: #222;
-                background-color: white;
-            }
-            QTableWidget::item:selected {
-                color: #fff; /* 選取時文字為白色，搭配選取背景色 */
             }
             QHeaderView::section {
                 background-color: #4a90e2;
@@ -263,8 +257,8 @@ class MonitorWindow(QtWidgets.QMainWindow):
                 border: none;
             }
             QTableWidget::item {
-                color: #222;
                 padding: 8px;
+                color: #2f3a45;
             }
         """)
         layout.addWidget(self.stats_table)
@@ -464,42 +458,28 @@ class MonitorWindow(QtWidgets.QMainWindow):
 
                         # 統計用戶消息數（僅計 user role）
                         user_messages = [m for m in messages if m.get('role') == 'user']
-                        assistant_messages = [m for m in messages if m.get('role') == 'assistant']
                         message_count = len(user_messages)
 
-                        # 取最後一條用戶消息與 AI 回覆
-                        last_user = user_messages[-1].get('content', '') if user_messages else ''
-                        last_ai = assistant_messages[-1].get('content', '') if assistant_messages else ''
-                        if len(last_user) > 200:
-                            last_user = last_user[:200] + '...'
-                        if len(last_ai) > 200:
-                            last_ai = last_ai[:200] + '...'
+                        # 取最後一條用戶消息
+                        last_message = user_messages[-1].get('content', '') if user_messages else ''
 
-                        # 優先使用 message 中的時間戳，嘗試多個常見欄位
-                        last_time = ''
-                        for msg in (user_messages + assistant_messages)[::-1]:
-                            for key in ('time', 'timestamp', 'created_at'):
-                                if isinstance(msg, dict) and msg.get(key):
-                                    last_time = msg.get(key)
-                                    break
-                            if last_time:
-                                break
-                        # 若沒有時間戳，使用 user_data.json 的最後保存時間作為備援
-                        if not last_time:
-                            try:
-                                mtime = os.path.getmtime(USER_DATA)
-                                last_time = datetime.fromtimestamp(mtime).strftime('%Y-%m-%d %H:%M:%S')
-                            except Exception:
-                                last_time = '未知'
-
-                        print(f'[GUI] user {user_id} messages={message_count} last_time={last_time}', file=sys.stderr)
+                        print(f'[GUI] user {user_id} messages={message_count}', file=sys.stderr)
 
                         self.stats_table.insertRow(row)
-                        self.stats_table.setItem(row, 0, QtWidgets.QTableWidgetItem(str(user_id)))
-                        self.stats_table.setItem(row, 1, QtWidgets.QTableWidgetItem(str(message_count)))
-                        self.stats_table.setItem(row, 2, QtWidgets.QTableWidgetItem(last_user))
-                        self.stats_table.setItem(row, 3, QtWidgets.QTableWidgetItem(str(last_time)))
-                        self.stats_table.setItem(row, 4, QtWidgets.QTableWidgetItem(last_ai))
+                        item_id = QtWidgets.QTableWidgetItem(str(user_id))
+                        item_id.setFlags(QtCore.Qt.ItemFlag.ItemIsSelectable | QtCore.Qt.ItemFlag.ItemIsEnabled)
+                        item_id.setForeground(QtGui.QBrush(QtGui.QColor('#2f3a45')))
+                        self.stats_table.setItem(row, 0, item_id)
+
+                        item_count = QtWidgets.QTableWidgetItem(str(message_count))
+                        item_count.setFlags(QtCore.Qt.ItemFlag.ItemIsSelectable | QtCore.Qt.ItemFlag.ItemIsEnabled)
+                        item_count.setForeground(QtGui.QBrush(QtGui.QColor('#2f3a45')))
+                        self.stats_table.setItem(row, 1, item_count)
+
+                        item_text = QtWidgets.QTableWidgetItem(last_message)
+                        item_text.setFlags(QtCore.Qt.ItemFlag.ItemIsSelectable | QtCore.Qt.ItemFlag.ItemIsEnabled)
+                        item_text.setForeground(QtGui.QBrush(QtGui.QColor('#2f3a45')))
+                        self.stats_table.setItem(row, 2, item_text)
                         row += 1
                     if row == 0:
                         # 若沒有任何 user messages，顯示單一提示列
@@ -511,8 +491,6 @@ class MonitorWindow(QtWidgets.QMainWindow):
                     # 美化與自動調整欄寬
                     self.stats_table.setAlternatingRowColors(True)
                     self.stats_table.resizeColumnsToContents()
-                    # 連接雙擊打開對話視窗（放在 try 內）
-                    self.stats_table.cellDoubleClicked.connect(self._on_stats_double_click)
 
             except Exception as e:
                 print(f'讀取會話數據失敗: {e}')
