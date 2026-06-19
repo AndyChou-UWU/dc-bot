@@ -134,8 +134,14 @@ class MonitorWindow(QtWidgets.QMainWindow):
         
         btn_layout.addStretch()
         
+        # 預先建立計時器，避免在 checkbox 設定時觸發 stateChanged 卻找不到 timer
+        self.timer = QtCore.QTimer()
+        self.timer.timeout.connect(self.refresh)
+
         self.auto_refresh = QtWidgets.QCheckBox('自動重新整理 (5秒)')
         self.auto_refresh.stateChanged.connect(self.toggle_auto_refresh)
+        # 預設啟用自動重新整理
+        self.auto_refresh.setChecked(True)
         btn_layout.addWidget(self.auto_refresh)
         
         layout.addLayout(btn_layout)
@@ -144,10 +150,10 @@ class MonitorWindow(QtWidgets.QMainWindow):
         self.status_label.setStyleSheet('color: #6f7d8c; font-size: 10pt;')
         layout.addWidget(self.status_label)
         
-        # 計時器用於自動刷新
-        self.timer = QtCore.QTimer()
-        self.timer.timeout.connect(self.refresh)
-        
+        # 計時器已在上方建立，若自動重新整理已勾選，啟動計時器
+        if getattr(self, 'auto_refresh', None) and self.auto_refresh.isChecked():
+            self.timer.start(5000)  # 每 5 秒刷新
+
         self.refresh()
         self.status_label.setText(f'最後更新: {datetime.now().strftime("%H:%M:%S")}')
         print("[GUI] ✅ 視窗初始化完成，準備顯示", file=sys.stderr)
@@ -199,14 +205,23 @@ class MonitorWindow(QtWidgets.QMainWindow):
         
         # 詳細統計表格
         self.stats_table = QtWidgets.QTableWidget()
-        self.stats_table.setColumnCount(3)
-        self.stats_table.setHorizontalHeaderLabels(['統計項目', '值', '備註'])
+        # 欄位: 用戶ID, 消息數, 最後用戶消息, 最後消息時間, AI 回答
+        self.stats_table.setColumnCount(5)
+        self.stats_table.setHorizontalHeaderLabels(['用戶ID', '消息數', '最後消息內容', '最後消息時間', 'AI 回答'])
         self.stats_table.horizontalHeader().setStretchLastSection(True)
         self.stats_table.setStyleSheet("""
             QTableWidget {
                 background-color: white;
                 color: #222; /* 文字顏色改為深色，避免白底白字 */
                 gridline-color: #ddd;
+            }
+            /* 編輯器與選取時的文字顏色 */
+            QTableWidget QLineEdit, QTableWidget QPlainTextEdit, QTableWidget QSpinBox {
+                color: #222;
+                background-color: white;
+            }
+            QTableWidget::item:selected {
+                color: #fff; /* 選取時文字為白色，搭配選取背景色 */
             }
             QHeaderView::section {
                 background-color: #4a90e2;
@@ -310,6 +325,10 @@ class MonitorWindow(QtWidgets.QMainWindow):
         return card
 
     def toggle_auto_refresh(self):
+        # 防護：確保 timer 已建立
+        if not hasattr(self, 'timer') or self.timer is None:
+            return
+
         if self.auto_refresh.isChecked():
             self.timer.start(5000)  # 每 5 秒刷新
         else:
@@ -400,7 +419,7 @@ class MonitorWindow(QtWidgets.QMainWindow):
                 with open(USER_DATA, 'r', encoding='utf-8') as f:
                     data = json.load(f)
                     conversations = data.get('conversations', {})
-                    
+
                     row = 0
                     if not conversations:
                         print('[GUI] update_stats_table: 沒有 conversations 資料', file=sys.stderr)
@@ -412,19 +431,42 @@ class MonitorWindow(QtWidgets.QMainWindow):
 
                         # 統計用戶消息數（僅計 user role）
                         user_messages = [m for m in messages if m.get('role') == 'user']
+                        assistant_messages = [m for m in messages if m.get('role') == 'assistant']
                         message_count = len(user_messages)
 
-                        # 取最後一條用戶消息
-                        last_message = user_messages[-1].get('content', '') if user_messages else ''
-                        if len(last_message) > 50:
-                            last_message = last_message[:50] + '...'
+                        # 取最後一條用戶消息與 AI 回覆
+                        last_user = user_messages[-1].get('content', '') if user_messages else ''
+                        last_ai = assistant_messages[-1].get('content', '') if assistant_messages else ''
+                        if len(last_user) > 200:
+                            last_user = last_user[:200] + '...'
+                        if len(last_ai) > 200:
+                            last_ai = last_ai[:200] + '...'
 
-                        print(f'[GUI] user {user_id} messages={message_count} last={last_message}', file=sys.stderr)
+                        # 優先使用 message 中的時間戳，嘗試多個常見欄位
+                        last_time = ''
+                        for msg in (user_messages + assistant_messages)[::-1]:
+                            for key in ('time', 'timestamp', 'created_at'):
+                                if isinstance(msg, dict) and msg.get(key):
+                                    last_time = msg.get(key)
+                                    break
+                            if last_time:
+                                break
+                        # 若沒有時間戳，使用 user_data.json 的最後保存時間作為備援
+                        if not last_time:
+                            try:
+                                mtime = os.path.getmtime(USER_DATA)
+                                last_time = datetime.fromtimestamp(mtime).strftime('%Y-%m-%d %H:%M:%S')
+                            except Exception:
+                                last_time = '未知'
+
+                        print(f'[GUI] user {user_id} messages={message_count} last_time={last_time}', file=sys.stderr)
 
                         self.stats_table.insertRow(row)
-                        self.stats_table.setItem(row, 0, QtWidgets.QTableWidgetItem(user_id))
+                        self.stats_table.setItem(row, 0, QtWidgets.QTableWidgetItem(str(user_id)))
                         self.stats_table.setItem(row, 1, QtWidgets.QTableWidgetItem(str(message_count)))
-                        self.stats_table.setItem(row, 2, QtWidgets.QTableWidgetItem(last_message))
+                        self.stats_table.setItem(row, 2, QtWidgets.QTableWidgetItem(last_user))
+                        self.stats_table.setItem(row, 3, QtWidgets.QTableWidgetItem(str(last_time)))
+                        self.stats_table.setItem(row, 4, QtWidgets.QTableWidgetItem(last_ai))
                         row += 1
                     if row == 0:
                         # 若沒有任何 user messages，顯示單一提示列
@@ -432,10 +474,6 @@ class MonitorWindow(QtWidgets.QMainWindow):
                         self.stats_table.setItem(0, 0, QtWidgets.QTableWidgetItem('無資料'))
                         self.stats_table.setItem(0, 1, QtWidgets.QTableWidgetItem('0'))
                         self.stats_table.setItem(0, 2, QtWidgets.QTableWidgetItem('沒有會話資料'))
-
-                    # 美化與自動調整欄寬
-                    self.stats_table.setAlternatingRowColors(True)
-                    self.stats_table.resizeColumnsToContents()
             except Exception as e:
                 print(f'讀取會話數據失敗: {e}')
 

@@ -690,9 +690,10 @@ async def handle_ai_request(message, question, personality):
                 result = response.json()
                 answer = result.get("message", {}).get("content", "⚠️ AI 未返回內容")
 
-            # 更新歷史紀錄
-            user_conversations[user_id].append({"role": "user", "content": question})
-            user_conversations[user_id].append({"role": "assistant", "content": answer})
+            # 更新歷史紀錄（包含時間戳）
+            ts = datetime.now().isoformat()
+            user_conversations[user_id].append({"role": "user", "content": question, "time": ts})
+            user_conversations[user_id].append({"role": "assistant", "content": answer, "time": ts})
 
             # 限制歷史長度
             if len(user_conversations[user_id]) > MAX_HISTORY * 2:
