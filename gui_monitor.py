@@ -222,6 +222,13 @@ class MonitorWindow(QtWidgets.QMainWindow):
             lines.append(f"[{t}] {r}: {c}")
         text.setPlainText('\n'.join(lines) if lines else '無對話資料')
         v.addWidget(text)
+
+        btn_box = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Close)
+        btn_box.accepted.connect(dlg.accept)
+        btn_box.rejected.connect(dlg.reject)
+        btn_box.button(QtWidgets.QDialogButtonBox.Close).clicked.connect(dlg.close)
+        v.addWidget(btn_box)
+
         dlg.exec()
 
     def create_stats_tab(self):
