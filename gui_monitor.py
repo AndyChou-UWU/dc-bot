@@ -132,16 +132,6 @@ class MonitorWindow(QtWidgets.QMainWindow):
         self.open_logs_btn.setFixedWidth(150)
         btn_layout.addWidget(self.open_logs_btn)
         
-        self.generate_ppt_btn = QtWidgets.QPushButton('📊 生成代碼展示 PPT')
-        self.generate_ppt_btn.clicked.connect(self.generate_ppt)
-        self.generate_ppt_btn.setFixedWidth(150)
-        btn_layout.addWidget(self.generate_ppt_btn)
-        
-        self.generate_custom_ppt_btn = QtWidgets.QPushButton('🎨 生成自定義 PPT')
-        self.generate_custom_ppt_btn.clicked.connect(self.generate_custom_ppt)
-        self.generate_custom_ppt_btn.setFixedWidth(150)
-        btn_layout.addWidget(self.generate_custom_ppt_btn)
-        
         btn_layout.addStretch()
         
         self.auto_refresh = QtWidgets.QCheckBox('自動重新整理 (5秒)')
@@ -397,22 +387,38 @@ class MonitorWindow(QtWidgets.QMainWindow):
         self.canvas_bar.draw()
 
     def update_stats_table(self, users, personalities, languages):
-        """更新統計表格"""
+        """更新統計表格 - 顯示用戶消息"""
         self.stats_table.setRowCount(0)
+        self.stats_table.setColumnCount(3)
+        self.stats_table.setHorizontalHeaderLabels(['用戶ID', '消息數', '最後消息內容'])
         
-        distinct_personalities = set(users.values()) if users else set()
-        distinct_languages = set(languages.values()) if languages else set()
-        stats = [
-            ('總用戶數', len(users), ''),
-            ('不同角色數', len(distinct_personalities), f"{', '.join(sorted(distinct_personalities)) if distinct_personalities else '無'}"),
-            ('不同語言數', len(distinct_languages), f"{', '.join(sorted(distinct_languages)) if distinct_languages else '無'}"),
-        ]
-        
-        for i, (item, value, remark) in enumerate(stats):
-            self.stats_table.insertRow(i)
-            self.stats_table.setItem(i, 0, QtWidgets.QTableWidgetItem(item))
-            self.stats_table.setItem(i, 1, QtWidgets.QTableWidgetItem(str(value)))
-            self.stats_table.setItem(i, 2, QtWidgets.QTableWidgetItem(remark))
+        # 加載會話數據
+        if os.path.exists(USER_DATA):
+            try:
+                with open(USER_DATA, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    conversations = data.get('conversations', {})
+                    
+                    row = 0
+                    for user_id, messages in conversations.items():
+                        if messages:
+                            # 統計用戶消息數
+                            user_messages = [m for m in messages if m.get('role') == 'user']
+                            message_count = len(user_messages)
+                            
+                            # 取最後一條用戶消息
+                            last_message = user_messages[-1].get('content', '') if user_messages else ''
+                            # 限制消息長度
+                            if len(last_message) > 50:
+                                last_message = last_message[:50] + '...'
+                            
+                            self.stats_table.insertRow(row)
+                            self.stats_table.setItem(row, 0, QtWidgets.QTableWidgetItem(user_id))
+                            self.stats_table.setItem(row, 1, QtWidgets.QTableWidgetItem(str(message_count)))
+                            self.stats_table.setItem(row, 2, QtWidgets.QTableWidgetItem(last_message))
+                            row += 1
+            except Exception as e:
+                print(f'讀取會話數據失敗: {e}')
 
     def update_system_info(self):
         """更新系統信息"""
@@ -497,69 +503,6 @@ class MonitorWindow(QtWidgets.QMainWindow):
                 subprocess.Popen(['open', path])
             else:
                 subprocess.Popen(['xdg-open', path])
-
-    def generate_ppt(self):
-        """生成代碼展示 PPT"""
-        try:
-            script_path = os.path.join(PROJECT_DIR, 'generate_ppt.py')
-            if not os.path.exists(script_path):
-                QtWidgets.QMessageBox.warning(self, '錯誤', '找不到 generate_ppt.py')
-                return
-            
-            self.status_label.setText('正在生成代碼展示 PPT...')
-            QtWidgets.QApplication.processEvents()
-            
-            import sys
-            result = subprocess.run([
-                sys.executable, script_path
-            ], capture_output=True, text=True, cwd=PROJECT_DIR, timeout=60)
-            
-            if result.returncode == 0:
-                output_msg = result.stdout if result.stdout else 'PPT 已成功生成！'
-                QtWidgets.QMessageBox.information(self, '成功', output_msg)
-                self.status_label.setText('✅ 代碼展示 PPT 已生成')
-            else:
-                error_msg = result.stderr if result.stderr else f'返回碼: {result.returncode}'
-                QtWidgets.QMessageBox.critical(self, '失敗', f'生成 PPT 失敗：\n{error_msg}')
-                self.status_label.setText('❌ PPT 生成失敗')
-        except subprocess.TimeoutExpired:
-            QtWidgets.QMessageBox.critical(self, '逾時', 'PPT 生成超過 60 秒，已中止')
-            self.status_label.setText('❌ PPT 生成逾時')
-        except Exception as e:
-            QtWidgets.QMessageBox.critical(self, '錯誤', f'執行失敗：{str(e)}\n\nDEBUG:\nPROJECT_DIR: {PROJECT_DIR}\nsys.executable: {sys.executable}')
-            self.status_label.setText('❌ 執行出錯')
-
-    def generate_custom_ppt(self):
-        """生成自定義 PPT"""
-        try:
-            script_path = os.path.join(PROJECT_DIR, 'generate_custom_ppt.py')
-            if not os.path.exists(script_path):
-                QtWidgets.QMessageBox.warning(self, '錯誤', '找不到 generate_custom_ppt.py')
-                return
-            
-            self.status_label.setText('正在生成自定義 PPT...')
-            QtWidgets.QApplication.processEvents()
-            
-            import sys
-            result = subprocess.run([
-                sys.executable, script_path
-            ], capture_output=True, text=True, cwd=PROJECT_DIR, timeout=60)
-            
-            if result.returncode == 0:
-                output_msg = result.stdout if result.stdout else 'PPT 已成功生成！'
-                QtWidgets.QMessageBox.information(self, '成功', output_msg)
-                self.status_label.setText('✅ 自定義 PPT 已生成')
-            else:
-                error_msg = result.stderr if result.stderr else f'返回碼: {result.returncode}'
-                QtWidgets.QMessageBox.critical(self, '失敗', f'生成 PPT 失敗：\n{error_msg}')
-                self.status_label.setText('❌ PPT 生成失敗')
-        except subprocess.TimeoutExpired:
-            QtWidgets.QMessageBox.critical(self, '逾時', 'PPT 生成超過 60 秒，已中止')
-            self.status_label.setText('❌ PPT 生成逾時')
-        except Exception as e:
-            QtWidgets.QMessageBox.critical(self, '錯誤', f'執行失敗：{str(e)}\n\nDEBUG:\nPROJECT_DIR: {PROJECT_DIR}\nsys.executable: {sys.executable}')
-            self.status_label.setText('❌ 執行出錯')
-
 
 def main():
     print("[GUI] 正在啟動應用程式...", file=sys.stderr)

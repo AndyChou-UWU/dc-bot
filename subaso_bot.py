@@ -23,6 +23,7 @@ import logging
 import socket
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
+import aiohttp
 import httpx
 
 # 導入自定義模塊
@@ -795,7 +796,7 @@ async def broadcast_update_notification(new_version):
 
 
 def check_discord_dns():
-    targets = ["gateway.discord.gg", "discord.com"]
+    targets = ["gateway.discord.gg", "discord.com", "discord.gg"]
     failures = []
     for host in targets:
         try:
@@ -816,6 +817,8 @@ def main():
     if dns_failures:
         logger.error("Discord DNS 解析失敗，請檢查網路或 DNS 設定。詳細: %s", " | ".join(dns_failures))
         print("❌ Discord DNS 解析失敗，請檢查網路或 DNS 設定。")
+        print("   建議: 檢查 DNS 伺服器，或改用 8.8.8.8 / 1.1.1.1；確認防火牆未阻擋 Discord")
+        return
 
     logger.info(f"{BOT_NAME} v{BOT_VERSION} 正在啟動...")
     try:
