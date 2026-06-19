@@ -18,6 +18,8 @@ import logging
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 import httpx
+# 用於備份 user_data.json
+import shutil
 # 引入 subaso_config 中的全局設定
 from subaso_config import *
 from modules_games import GameSystem
@@ -157,16 +159,38 @@ def load_all_user_data():
 def save_all_user_data():
     """保存所有用戶數據到文件"""
     global user_personalities, user_languages, user_conversations, user_seen_guide, user_debates, BOT_VERSION, last_notified_version
+    # 在保存前嘗試保留磁碟上已有的 conversations（避免內存為空時覆蓋掉已存在的會話）
+    existing = load_user_data()
+    existing_conversations = {}
+    try:
+        if isinstance(existing, dict):
+            existing_conversations = existing.get('conversations', {}) or {}
+    except Exception:
+        existing_conversations = {}
+
+    conversations_to_save = user_conversations if user_conversations else existing_conversations
+
     data = {
         "personalities": {str(k): v for k, v in user_personalities.items()},
         "languages": {str(k): v for k, v in user_languages.items()},
-        "conversations": user_conversations,
+        "conversations": conversations_to_save,
         "seen_guide": user_seen_guide,
         "debates": user_debates,
         "last_save": datetime.now().isoformat(),
         "bot_version": BOT_VERSION,
         "last_notified_version": last_notified_version
     }
+
+    # 先備份現有的 user_data.json（以防止意外覆蓋導致資料遺失）
+    try:
+        if os.path.exists(DATA_FILE):
+            backup_dir = os.path.join(os.path.dirname(__file__), 'backups')
+            os.makedirs(backup_dir, exist_ok=True)
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            shutil.copy2(DATA_FILE, os.path.join(backup_dir, f'user_data.json.{timestamp}.bak'))
+    except Exception as e:
+        logger.warning(f'備份 user_data.json 失敗: {e}')
+
     save_user_data(data)
 
 def load_version_info():

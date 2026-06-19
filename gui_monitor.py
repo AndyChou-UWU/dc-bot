@@ -205,6 +205,7 @@ class MonitorWindow(QtWidgets.QMainWindow):
         self.stats_table.setStyleSheet("""
             QTableWidget {
                 background-color: white;
+                color: #222; /* 文字顏色改為深色，避免白底白字 */
                 gridline-color: #ddd;
             }
             QHeaderView::section {
@@ -214,6 +215,7 @@ class MonitorWindow(QtWidgets.QMainWindow):
                 border: none;
             }
             QTableWidget::item {
+                color: #222;
                 padding: 8px;
             }
         """)
@@ -400,23 +402,40 @@ class MonitorWindow(QtWidgets.QMainWindow):
                     conversations = data.get('conversations', {})
                     
                     row = 0
+                    if not conversations:
+                        print('[GUI] update_stats_table: 沒有 conversations 資料', file=sys.stderr)
                     for user_id, messages in conversations.items():
-                        if messages:
-                            # 統計用戶消息數
-                            user_messages = [m for m in messages if m.get('role') == 'user']
-                            message_count = len(user_messages)
-                            
-                            # 取最後一條用戶消息
-                            last_message = user_messages[-1].get('content', '') if user_messages else ''
-                            # 限制消息長度
-                            if len(last_message) > 50:
-                                last_message = last_message[:50] + '...'
-                            
-                            self.stats_table.insertRow(row)
-                            self.stats_table.setItem(row, 0, QtWidgets.QTableWidgetItem(user_id))
-                            self.stats_table.setItem(row, 1, QtWidgets.QTableWidgetItem(str(message_count)))
-                            self.stats_table.setItem(row, 2, QtWidgets.QTableWidgetItem(last_message))
-                            row += 1
+                        # messages 可能為空列表
+                        if not messages:
+                            print(f'[GUI] user {user_id} 沒有消息', file=sys.stderr)
+                            continue
+
+                        # 統計用戶消息數（僅計 user role）
+                        user_messages = [m for m in messages if m.get('role') == 'user']
+                        message_count = len(user_messages)
+
+                        # 取最後一條用戶消息
+                        last_message = user_messages[-1].get('content', '') if user_messages else ''
+                        if len(last_message) > 50:
+                            last_message = last_message[:50] + '...'
+
+                        print(f'[GUI] user {user_id} messages={message_count} last={last_message}', file=sys.stderr)
+
+                        self.stats_table.insertRow(row)
+                        self.stats_table.setItem(row, 0, QtWidgets.QTableWidgetItem(user_id))
+                        self.stats_table.setItem(row, 1, QtWidgets.QTableWidgetItem(str(message_count)))
+                        self.stats_table.setItem(row, 2, QtWidgets.QTableWidgetItem(last_message))
+                        row += 1
+                    if row == 0:
+                        # 若沒有任何 user messages，顯示單一提示列
+                        self.stats_table.setRowCount(1)
+                        self.stats_table.setItem(0, 0, QtWidgets.QTableWidgetItem('無資料'))
+                        self.stats_table.setItem(0, 1, QtWidgets.QTableWidgetItem('0'))
+                        self.stats_table.setItem(0, 2, QtWidgets.QTableWidgetItem('沒有會話資料'))
+
+                    # 美化與自動調整欄寬
+                    self.stats_table.setAlternatingRowColors(True)
+                    self.stats_table.resizeColumnsToContents()
             except Exception as e:
                 print(f'讀取會話數據失敗: {e}')
 
