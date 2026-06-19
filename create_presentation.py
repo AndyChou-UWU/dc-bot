@@ -206,7 +206,7 @@ add_two_column_slide(prs, "🎭 5 大 AI 角色詳解",
 add_content_slide(prs, "🔧 技術棧與架構", [
     ("編程語言", "Python 3.8+ | 異步編程 (asyncio)"),
     ("主要庫", "discord.py 2.0+ | aiohttp | httpx | python-dotenv"),
-    ("AI 引擎", "Ollama (本地輕量級 LLM) | Qwen2.5-1.5B 模型"),
+    ("AI 引擎", "Ollama (本地輕量級 LLM) | qwen2.5:7b-instruct 模型"),
     ("數據存儲", "JSON 文件存儲 | user_data.json 用戶數據"),
     ("日誌系統", "結構化日誌 | 文件和控制檯輸出 | UTF-8 編碼支持"),
 ])
@@ -276,7 +276,7 @@ add_two_column_slide(prs, "📋 環境與依賴",
 add_content_slide(prs, "🚀 部署與運行", [
     "1️⃣ 安裝依賴：pip install -r requirements.txt",
     "2️⃣ 安裝 Ollama：https://ollama.ai",
-    "3️⃣ 拉取模型：ollama pull Qwen2.5-1.5B",
+    "3️⃣ 拉取模型：ollama pull qwen2.5:7b-instruct",
     "4️⃣ 配置 Token：在 設定.env 中設置 DISCORD_TOKEN",
     "5️⃣ 啓動 Bot：python bot.py",
     "6️⃣ Docker 部署：docker build -t dcard-bot . && docker run ...",

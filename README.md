@@ -14,7 +14,7 @@
 
 ## 2. 安裝需求
 - Python 3.8+
-- Ollama（推薦安裝後拉取 `Qwen2.5-1.5B`）
+- Ollama（推薦安裝後拉取 `qwen2.5:7b-instruct`）
 - Discord Bot Token
 
 ## 3. 快速開始
@@ -30,7 +30,7 @@ pip install -r requirements.txt
 ```env
 DISCORD_TOKEN=你的_Token
 OLLAMA_BASE_URL=http://localhost:11434
-OLLAMA_MODEL=Qwen2.5-1.5B
+OLLAMA_MODEL=qwen2.5:7b-instruct
 ADMIN_IDS=你的Discord_ID
 ```
 
@@ -79,7 +79,7 @@ bash entrypoint.sh
 
 ### Ollama 404 / 模型不存在
 ```powershell
-ollama pull Qwen2.5-1.5B
+ollama pull qwen2.5:7b-instruct
 ```
 
 ### Python 套件缺少

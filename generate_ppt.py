@@ -139,7 +139,7 @@ def create_presentation():
 • 名稱: subaso-俗北ㄙㄡˊ
 • 版本: 2.0.0
 • 平臺: Discord.py
-• AI引擎: Ollama (Qwen2.5-1.5B)
+• AI引擎: Ollama (qwen2.5:7b-instruct)
 • 語言: Python 3.8+
 
 🎯 核心功能
@@ -458,7 +458,7 @@ def save_all_user_data():
 2️⃣ 配置環境變量 (設定.env)
    DISCORD_TOKEN=your_token_here
    OLLAMA_BASE_URL=http://localhost:11434
-   OLLAMA_MODEL=Qwen2.5-1.5B
+   OLLAMA_MODEL=qwen2.5:7b-instruct
    ADMIN_IDS=123456789,987654321
 
 3️⃣ 啟動 Ollama (另一個終端)

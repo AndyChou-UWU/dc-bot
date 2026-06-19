@@ -90,9 +90,9 @@ def start_ollama():
             time.sleep(3)  # 等待 Ollama 啟動
             
             # 嘗試下載模型
-            print("   📥 確認/下載推薦模型 Qwen2.5-1.5B...")
+            print("   📥 確認/下載推薦模型 qwen2.5:7b-instruct...")
             result = subprocess.run(
-                [ollama_cmd, "pull", "Qwen2.5-1.5B"],
+                [ollama_cmd, "pull", "qwen2.5:7b-instruct"],
                 capture_output=True,
                 timeout=300
             )

@@ -211,6 +211,7 @@ class MonitorWindow(QtWidgets.QMainWindow):
         dlg = QtWidgets.QDialog(self)
         dlg.setWindowTitle(f'對話: {user_id}')
         dlg.resize(800, 600)
+        dlg.setModal(True)
         v = QtWidgets.QVBoxLayout(dlg)
         text = QtWidgets.QPlainTextEdit()
         text.setReadOnly(True)
@@ -223,11 +224,13 @@ class MonitorWindow(QtWidgets.QMainWindow):
         text.setPlainText('\n'.join(lines) if lines else '無對話資料')
         v.addWidget(text)
 
-        btn_box = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Close)
-        btn_box.accepted.connect(dlg.accept)
-        btn_box.rejected.connect(dlg.reject)
-        btn_box.button(QtWidgets.QDialogButtonBox.Close).clicked.connect(dlg.close)
-        v.addWidget(btn_box)
+        btn_layout = QtWidgets.QHBoxLayout()
+        btn_layout.addStretch()
+        leave_button = QtWidgets.QPushButton('離開')
+        leave_button.setFixedWidth(100)
+        leave_button.clicked.connect(dlg.close)
+        btn_layout.addWidget(leave_button)
+        v.addLayout(btn_layout)
 
         dlg.exec()
 
@@ -244,7 +247,9 @@ class MonitorWindow(QtWidgets.QMainWindow):
         self.stats_table.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows)
         self.stats_table.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.SingleSelection)
         self.stats_table.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
-        self.stats_table.cellDoubleClicked.connect(self._on_stats_double_click)
+        self.stats_table.cellClicked.connect(self._on_stats_click)
+        self.stats_table.cellDoubleClicked.connect(self._on_stats_click)
+        self.stats_table.setCursor(QtGui.QCursor(QtCore.Qt.CursorShape.PointingHandCursor))
         self.stats_table.setStyleSheet("""
             QTableWidget {
                 background-color: white;
@@ -542,14 +547,14 @@ class MonitorWindow(QtWidgets.QMainWindow):
         except Exception as e:
             self.system_label.setText(f'讀取系統信息失敗: {e}')
 
-    def _on_stats_double_click(self, row, column):
+    def _on_stats_click(self, row, column):
         try:
             item = self.stats_table.item(row, 0)
             if item:
                 user_id = item.text()
                 self.show_conversation_dialog(user_id)
         except Exception as e:
-            print(f'雙擊打開對話失敗: {e}', file=sys.stderr)
+            print(f'打開對話失敗: {e}', file=sys.stderr)
 
     def update_logs(self):
         """更新日誌顯示"""

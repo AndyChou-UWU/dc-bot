@@ -41,7 +41,7 @@ if command -v ollama >/dev/null 2>&1; then
   OLLAMA_PID=$!
   echo "   📍 Ollama PID: $OLLAMA_PID"
   sleep 3
-  MODEL_NAME="qwen2.5:1.5b"
+  MODEL_NAME="qwen2.5:7b-instruct"
   echo "   📥 確認/下載推薦模型 ${MODEL_NAME}..."
   if command -v timeout >/dev/null 2>&1; then
     timeout 300 ollama pull "$MODEL_NAME" || true

@@ -62,7 +62,7 @@ client = discord.Client(intents=intents)
 
 # ==================== 全局變量 ====================
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen2.5:1.5b")
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen2.5:7b-instruct")
 admin_env = os.getenv("ADMIN_IDS", "")
 ADMIN_IDS = [int(i.strip()) for i in admin_env.split(",") if i.strip().isdigit()]
 
